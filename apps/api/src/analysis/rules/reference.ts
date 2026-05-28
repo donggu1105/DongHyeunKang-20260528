@@ -7,5 +7,6 @@ export function selectReference(refs: ReferenceDef[], ageMonths: number, sex: Se
     const exact = inBand.find((r) => r.sex === sex);
     if (exact) return exact;
   }
-  return inBand.find((r) => r.sex === null) ?? inBand[0];
+  // sex-neutral band only; never guess the opposite sex (fail to UNKNOWN instead)
+  return inBand.find((r) => r.sex === null) ?? null;
 }
