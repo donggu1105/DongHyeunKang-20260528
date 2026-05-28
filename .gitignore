@@ -18,6 +18,7 @@ playwright-report/
 
 # prisma generated client (regenerated on install)
 apps/api/generated/
+apps/api/prisma/seed/products.crawled.json
 
 # local databases (PGlite)
 *.db
