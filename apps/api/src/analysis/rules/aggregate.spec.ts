@@ -1,12 +1,25 @@
 import { aggregateByIngredient } from './aggregate';
 import type { IngredientDef, ProductInput } from '../analysis.types';
 
-const vitD: IngredientDef = { id: 1, name: '비타민D', canonicalUnit: '㎍', isFatSoluble: true };
+const vitD: IngredientDef = {
+  id: 1,
+  name: '비타민D',
+  canonicalUnit: '㎍',
+  isFatSoluble: true,
+};
 const ings = new Map<number, IngredientDef>([[1, vitD]]);
 
 const products: ProductInput[] = [
-  { productId: 10, name: 'A', amounts: [{ ingredientId: 1, amount: 10, unit: '㎍' }] },
-  { productId: 11, name: 'B', amounts: [{ ingredientId: 1, amount: 15, unit: '㎍' }] },
+  {
+    productId: 10,
+    name: 'A',
+    amounts: [{ ingredientId: 1, amount: 10, unit: '㎍' }],
+  },
+  {
+    productId: 11,
+    name: 'B',
+    amounts: [{ ingredientId: 1, amount: 15, unit: '㎍' }],
+  },
 ];
 
 describe('aggregateByIngredient', () => {
@@ -15,16 +28,40 @@ describe('aggregateByIngredient', () => {
     expect(out.get(1)).toEqual({ totalCanonical: 25, productCount: 2 });
   });
   it('marks total null when any amount fails to normalize', () => {
-    const bad: ProductInput[] = [{ productId: 12, name: 'C', amounts: [{ ingredientId: 1, amount: 5, unit: 'spoons' }] }];
-    expect(aggregateByIngredient(bad, ings).get(1)).toEqual({ totalCanonical: null, productCount: 1 });
+    const bad: ProductInput[] = [
+      {
+        productId: 12,
+        name: 'C',
+        amounts: [{ ingredientId: 1, amount: 5, unit: 'spoons' }],
+      },
+    ];
+    expect(aggregateByIngredient(bad, ings).get(1)).toEqual({
+      totalCanonical: null,
+      productCount: 1,
+    });
   });
   it('rounds away binary FP noise at label scale (100mcg + 200mcg = 0.3mg, not 0.30000000000000004)', () => {
-    const vitC: IngredientDef = { id: 2, name: '비타민C', canonicalUnit: 'mg', isFatSoluble: false };
+    const vitC: IngredientDef = {
+      id: 2,
+      name: '비타민C',
+      canonicalUnit: 'mg',
+      isFatSoluble: false,
+    };
     const vcMap = new Map<number, IngredientDef>([[2, vitC]]);
     const vcProducts: ProductInput[] = [
-      { productId: 20, name: 'A', amounts: [{ ingredientId: 2, amount: 100, unit: 'mcg' }] },
-      { productId: 21, name: 'B', amounts: [{ ingredientId: 2, amount: 200, unit: 'mcg' }] },
+      {
+        productId: 20,
+        name: 'A',
+        amounts: [{ ingredientId: 2, amount: 100, unit: 'mcg' }],
+      },
+      {
+        productId: 21,
+        name: 'B',
+        amounts: [{ ingredientId: 2, amount: 200, unit: 'mcg' }],
+      },
     ];
-    expect(aggregateByIngredient(vcProducts, vcMap).get(2)?.totalCanonical).toBe(0.3);
+    expect(
+      aggregateByIngredient(vcProducts, vcMap).get(2)?.totalCanonical,
+    ).toBe(0.3);
   });
 });

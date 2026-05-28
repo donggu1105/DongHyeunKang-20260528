@@ -1,8 +1,18 @@
 import { toCanonical } from './units';
 
 describe('toCanonical', () => {
-  const vitD = { id: 1, name: '비타민D', canonicalUnit: '㎍', isFatSoluble: true };
-  const vitC = { id: 2, name: '비타민C', canonicalUnit: 'mg', isFatSoluble: false };
+  const vitD = {
+    id: 1,
+    name: '비타민D',
+    canonicalUnit: '㎍',
+    isFatSoluble: true,
+  };
+  const vitC = {
+    id: 2,
+    name: '비타민C',
+    canonicalUnit: 'mg',
+    isFatSoluble: false,
+  };
 
   it('passes through same unit', () => {
     expect(toCanonical(10, 'mg', vitC)).toBe(10);

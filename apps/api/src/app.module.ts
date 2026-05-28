@@ -7,7 +7,12 @@ import { AnalysisModule } from './analysis/analysis.module';
 import { ProductsModule } from './products/products.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AnalysisModule, ProductsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    AnalysisModule,
+    ProductsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

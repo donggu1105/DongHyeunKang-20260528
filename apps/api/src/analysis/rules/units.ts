@@ -22,7 +22,11 @@ const IU_TO_CANONICAL: Record<string, { unit: string; factor: number }> = {
 };
 
 /** 라벨 표기값을 성분의 canonicalUnit 기준 숫자로 변환. 불가능하면 null. */
-export function toCanonical(amount: number, unit: string, ing: IngredientDef): number | null {
+export function toCanonical(
+  amount: number,
+  unit: string,
+  ing: IngredientDef,
+): number | null {
   const u = unit.trim();
   if (u === 'IU') {
     const conv = IU_TO_CANONICAL[ing.name.trim()];

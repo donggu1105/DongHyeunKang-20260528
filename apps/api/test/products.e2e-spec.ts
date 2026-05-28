@@ -25,7 +25,9 @@ describe('GET /products (e2e)', () => {
       .useValue(stub)
       .compile();
     app = mod.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
   afterAll(async () => {

@@ -18,22 +18,49 @@ describe('AnalysisService', () => {
       providers: [
         AnalysisService,
         { provide: PrismaService, useValue: prismaMock },
-        { provide: ExplanationService, useValue: { explain: jest.fn().mockResolvedValue('설명') } },
+        {
+          provide: ExplanationService,
+          useValue: { explain: jest.fn().mockResolvedValue('설명') },
+        },
       ],
     }).compile();
     service = mod.get(AnalysisService);
   });
 
   it('returns per-nutrient verdicts from DB data', async () => {
-    prismaMock.ingredient.findMany.mockResolvedValue([{ id: 1, name: '비타민D', canonicalUnit: '㎍', isFatSoluble: true }]);
+    prismaMock.ingredient.findMany.mockResolvedValue([
+      { id: 1, name: '비타민D', canonicalUnit: '㎍', isFatSoluble: true },
+    ]);
     prismaMock.intakeReference.findMany.mockResolvedValue([
-      { ingredientId: 1, ageMinMonths: 72, ageMaxMonths: 107, sex: null, recommended: '5', upperLimit: '40', unit: '㎍', source: 'KDRIs 2020', sourceUrl: 'http://x' },
+      {
+        ingredientId: 1,
+        ageMinMonths: 72,
+        ageMaxMonths: 107,
+        sex: null,
+        recommended: '5',
+        upperLimit: '40',
+        unit: '㎍',
+        source: 'KDRIs 2020',
+        sourceUrl: 'http://x',
+      },
     ]);
     prismaMock.product.findMany.mockResolvedValue([
-      { id: 10, name: 'A', ingredients: [{ ingredientId: 1, amount: '10', unit: '㎍' }] },
-      { id: 11, name: 'B', ingredients: [{ ingredientId: 1, amount: '15', unit: '㎍' }] },
+      {
+        id: 10,
+        name: 'A',
+        ingredients: [{ ingredientId: 1, amount: '10', unit: '㎍' }],
+      },
+      {
+        id: 11,
+        name: 'B',
+        ingredients: [{ ingredientId: 1, amount: '15', unit: '㎍' }],
+      },
     ]);
-    const out = await service.analyze({ ageMonths: 96, sex: null, productIds: [10, 11] });
+    const out = await service.analyze({
+      ageMonths: 96,
+      sex: null,
+      productIds: [10, 11],
+    });
     expect(out.byNutrient[0].verdict).toBe('DUPLICATE');
     expect(out.byNutrient[0].ingredientName).toBe('비타민D');
     expect(out.byNutrient[0].explanation).toBe('설명');
@@ -46,19 +73,48 @@ describe('AnalysisService', () => {
       providers: [
         AnalysisService,
         { provide: PrismaService, useValue: prismaMock },
-        { provide: ExplanationService, useValue: { explain: jest.fn().mockRejectedValue(new Error('llm down')) } },
+        {
+          provide: ExplanationService,
+          useValue: {
+            explain: jest.fn().mockRejectedValue(new Error('llm down')),
+          },
+        },
       ],
     }).compile();
     const svc = mod.get(AnalysisService);
-    prismaMock.ingredient.findMany.mockResolvedValue([{ id: 1, name: '비타민D', canonicalUnit: '㎍', isFatSoluble: true }]);
+    prismaMock.ingredient.findMany.mockResolvedValue([
+      { id: 1, name: '비타민D', canonicalUnit: '㎍', isFatSoluble: true },
+    ]);
     prismaMock.intakeReference.findMany.mockResolvedValue([
-      { ingredientId: 1, ageMinMonths: 72, ageMaxMonths: 107, sex: null, recommended: '5', upperLimit: '40', unit: '㎍', source: 'KDRIs 2020', sourceUrl: 'http://x' },
+      {
+        ingredientId: 1,
+        ageMinMonths: 72,
+        ageMaxMonths: 107,
+        sex: null,
+        recommended: '5',
+        upperLimit: '40',
+        unit: '㎍',
+        source: 'KDRIs 2020',
+        sourceUrl: 'http://x',
+      },
     ]);
     prismaMock.product.findMany.mockResolvedValue([
-      { id: 10, name: 'A', ingredients: [{ ingredientId: 1, amount: '10', unit: '㎍' }] },
-      { id: 11, name: 'B', ingredients: [{ ingredientId: 1, amount: '15', unit: '㎍' }] },
+      {
+        id: 10,
+        name: 'A',
+        ingredients: [{ ingredientId: 1, amount: '10', unit: '㎍' }],
+      },
+      {
+        id: 11,
+        name: 'B',
+        ingredients: [{ ingredientId: 1, amount: '15', unit: '㎍' }],
+      },
     ]);
-    const out = await svc.analyze({ ageMonths: 96, sex: null, productIds: [10, 11] });
+    const out = await svc.analyze({
+      ageMonths: 96,
+      sex: null,
+      productIds: [10, 11],
+    });
     expect(out.byNutrient[0].verdict).toBe('DUPLICATE');
     expect(typeof out.byNutrient[0].explanation).toBe('string');
   });
@@ -70,8 +126,8 @@ describe('AnalysisService', () => {
     prismaMock.product.findMany.mockResolvedValue([
       { id: 10, name: 'A', ingredients: [] },
     ]);
-    await expect(service.analyze({ ageMonths: 96, sex: null, productIds: [10, 11, 99] })).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      service.analyze({ ageMonths: 96, sex: null, productIds: [10, 11, 99] }),
+    ).rejects.toThrow(BadRequestException);
   });
 });

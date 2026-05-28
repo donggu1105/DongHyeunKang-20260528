@@ -1,4 +1,10 @@
-import type { IngredientDef, NutrientResult, ProductInput, ReferenceDef, Sex } from '../analysis.types';
+import type {
+  IngredientDef,
+  NutrientResult,
+  ProductInput,
+  ReferenceDef,
+  Sex,
+} from '../analysis.types';
 import { aggregateByIngredient } from './aggregate';
 import { selectReference } from './reference';
 import { judge } from './verdict';
@@ -17,7 +23,9 @@ export function runAnalysis(input: AnalysisInput): NutrientResult[] {
   const results: NutrientResult[] = [];
   for (const [ingredientId, row] of agg) {
     const ing = ingMap.get(ingredientId);
-    const refsFor = input.references.filter((r) => r.ingredientId === ingredientId);
+    const refsFor = input.references.filter(
+      (r) => r.ingredientId === ingredientId,
+    );
     const ref = selectReference(refsFor, input.ageMonths, input.sex);
     const j = judge(row.totalCanonical, row.productCount, ref);
     results.push({

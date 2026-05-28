@@ -16,7 +16,10 @@ import { ExplanationService } from './explanation.service';
     {
       provide: OpenAI,
       // key may be absent in dev; fallback keeps boot alive — real calls fail at request time until a key is set
-      useFactory: (c: ConfigService) => new OpenAI({ apiKey: c.get<string>('OPENAI_API_KEY') || 'sk-no-key-set' }),
+      useFactory: (c: ConfigService) =>
+        new OpenAI({
+          apiKey: c.get<string>('OPENAI_API_KEY') || 'sk-no-key-set',
+        }),
       inject: [ConfigService],
     },
   ],

@@ -9,7 +9,10 @@ describe('ProductsService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const mod = await Test.createTestingModule({
-      providers: [ProductsService, { provide: PrismaService, useValue: prismaMock }],
+      providers: [
+        ProductsService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
     }).compile();
     service = mod.get(ProductsService);
   });
@@ -25,7 +28,9 @@ describe('ProductsService', () => {
         price: '12000',
         sourceUrl: 'http://x',
         imageUrl: 'http://img',
-        ingredients: [{ amount: '10', unit: '㎍', ingredient: { name: '비타민D' } }],
+        ingredients: [
+          { amount: '10', unit: '㎍', ingredient: { name: '비타민D' } },
+        ],
       },
     ]);
 

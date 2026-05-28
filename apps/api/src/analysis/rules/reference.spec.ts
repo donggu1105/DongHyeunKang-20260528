@@ -2,8 +2,28 @@ import { selectReference } from './reference';
 import type { ReferenceDef } from '../analysis.types';
 
 const refs: ReferenceDef[] = [
-  { ingredientId: 1, ageMinMonths: 72, ageMaxMonths: 107, sex: null, recommended: 5, upperLimit: 40, unit: '㎍', source: 'KDRIs 2020', sourceUrl: null },
-  { ingredientId: 1, ageMinMonths: 108, ageMaxMonths: 143, sex: null, recommended: 5, upperLimit: 60, unit: '㎍', source: 'KDRIs 2020', sourceUrl: null },
+  {
+    ingredientId: 1,
+    ageMinMonths: 72,
+    ageMaxMonths: 107,
+    sex: null,
+    recommended: 5,
+    upperLimit: 40,
+    unit: '㎍',
+    source: 'KDRIs 2020',
+    sourceUrl: null,
+  },
+  {
+    ingredientId: 1,
+    ageMinMonths: 108,
+    ageMaxMonths: 143,
+    sex: null,
+    recommended: 5,
+    upperLimit: 60,
+    unit: '㎍',
+    source: 'KDRIs 2020',
+    sourceUrl: null,
+  },
 ];
 
 describe('selectReference', () => {
@@ -22,11 +42,15 @@ describe('selectReference', () => {
     expect(selectReference(withSex, 96, 'FEMALE')?.upperLimit).toBe(35);
   });
   it('returns null rather than guessing the opposite-sex band (fail-safe)', () => {
-    const maleOnly: ReferenceDef[] = [{ ...refs[0], sex: 'MALE', upperLimit: 45 }];
+    const maleOnly: ReferenceDef[] = [
+      { ...refs[0], sex: 'MALE', upperLimit: 45 },
+    ];
     expect(selectReference(maleOnly, 96, 'FEMALE')).toBeNull();
   });
   it('returns null when only a sexed band exists and no sex was requested', () => {
-    const sexedOnly: ReferenceDef[] = [{ ...refs[0], sex: 'MALE', upperLimit: 45 }];
+    const sexedOnly: ReferenceDef[] = [
+      { ...refs[0], sex: 'MALE', upperLimit: 45 },
+    ];
     expect(selectReference(sexedOnly, 96, null)).toBeNull();
   });
 });

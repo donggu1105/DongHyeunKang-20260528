@@ -18,9 +18,15 @@ export function aggregateByIngredient(
   for (const p of products) {
     for (const a of p.amounts) {
       const ing = ingredients.get(a.ingredientId);
-      const prev = out.get(a.ingredientId) ?? { totalCanonical: 0, productCount: 0 };
+      const prev = out.get(a.ingredientId) ?? {
+        totalCanonical: 0,
+        productCount: 0,
+      };
       const conv = ing ? toCanonical(a.amount, a.unit, ing) : null;
-      const sum = prev.totalCanonical === null || conv === null ? null : prev.totalCanonical + conv;
+      const sum =
+        prev.totalCanonical === null || conv === null
+          ? null
+          : prev.totalCanonical + conv;
       out.set(a.ingredientId, {
         totalCanonical: sum === null ? null : round(sum),
         productCount: prev.productCount + 1,

@@ -90,8 +90,7 @@ async function fetchProduct(url: string): Promise<CrawledProduct> {
   const res = await fetch(url, {
     headers: {
       'User-Agent': USER_AGENT,
-      Accept:
-        'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
     },
   });

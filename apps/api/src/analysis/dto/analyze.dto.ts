@@ -1,4 +1,11 @@
-import { ArrayNotEmpty, IsArray, IsIn, IsInt, IsOptional, Min } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class AnalyzeRequestDto {
   @IsInt()

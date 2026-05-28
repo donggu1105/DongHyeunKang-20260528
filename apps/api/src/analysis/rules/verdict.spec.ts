@@ -1,7 +1,17 @@
 import { judge } from './verdict';
 import type { ReferenceDef } from '../analysis.types';
 
-const ref: ReferenceDef = { ingredientId: 1, ageMinMonths: 72, ageMaxMonths: 107, sex: null, recommended: 5, upperLimit: 40, unit: '㎍', source: 'KDRIs 2020', sourceUrl: null };
+const ref: ReferenceDef = {
+  ingredientId: 1,
+  ageMinMonths: 72,
+  ageMaxMonths: 107,
+  sex: null,
+  recommended: 5,
+  upperLimit: 40,
+  unit: '㎍',
+  source: 'KDRIs 2020',
+  sourceUrl: null,
+};
 
 describe('judge', () => {
   it('UNKNOWN when no reference', () => {

@@ -161,9 +161,7 @@ export interface SeedStandardsResult {
  * seed.ts FK-safe order). We only upsert ingredients and createMany the
  * references here.
  */
-export async function seedStandards(
-  prisma: Db,
-): Promise<SeedStandardsResult> {
+export async function seedStandards(prisma: Db): Promise<SeedStandardsResult> {
   // Upsert ingredients by unique name; capture id by name for references.
   const idByName = new Map<string, number>();
   for (const { ingredient } of STANDARDS) {
