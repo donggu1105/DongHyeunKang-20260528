@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -30,5 +31,17 @@ describe('AnalysisService', () => {
     const out = await service.analyze({ ageMonths: 96, sex: null, productIds: [10, 11] });
     expect(out.byNutrient[0].verdict).toBe('DUPLICATE');
     expect(out.disclaimer).toContain('참고용');
+  });
+
+  it('throws BadRequestException when a requested product ID does not resolve', async () => {
+    prismaMock.ingredient.findMany.mockResolvedValue([]);
+    prismaMock.intakeReference.findMany.mockResolvedValue([]);
+    // requested [10, 11, 99] but only 10 exists
+    prismaMock.product.findMany.mockResolvedValue([
+      { id: 10, name: 'A', ingredients: [] },
+    ]);
+    await expect(service.analyze({ ageMonths: 96, sex: null, productIds: [10, 11, 99] })).rejects.toThrow(
+      BadRequestException,
+    );
   });
 });
