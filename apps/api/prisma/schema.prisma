@@ -11,11 +11,182 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// 👇 Define your domain models here. The User below is a sample — change it freely.
+// ─── Auth / ownership ────────────────────────────────────────────────
+// Parent (mom) account. Login is optional in the MVP, so Child/Analysis
+// may exist without an owner (anonymous quick check).
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
   name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  children  Child[]
+  analyses  Analysis[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+// The child whose supplements are being checked. Age is the core axis for
+// every adequacy / upper-limit judgment.
+model Child {
+  id        Int        @id @default(autoincrement())
+  name      String?
+  ageMonths Int // captured from the "아이 나이" input
+  birthDate DateTime? // optional; more precise than ageMonths when known
+  sex       Sex? // KDRIs reference values are banded by age AND sex
+  userId    Int?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  analyses  Analysis[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+// ─── Catalog (crawled label data) ────────────────────────────────────
+// A supplement product. Every numeric fact comes from real crawled label
+// data, never from the LLM (grounding principle).
+model Product {
+  id             Int                      @id @default(autoincrement())
+  name           String
+  brand          String?
+  form           String? // 구미 / 정제 / 분말 ...
+  targetAgeLabel String? // raw "대상연령" text from the label
+  price          Int? // KRW
+  sourceUrl      String? // where the label data was crawled from
+  imageUrl       String?
+  ingredients    ProductIngredient[]
+  analysisLinks  AnalysisProduct[]
+  recommendedIn  AnalysisRecommendation[]
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+}
+
+// A canonical nutrient (비타민D, 유산균 ...). Fat-soluble nutrients
+// accumulate in the body, so overdose carries extra risk.
+model Ingredient {
+  id            Int                 @id @default(autoincrement())
+  name          String              @unique
+  canonicalUnit String // unit all amounts are normalized to
+  isFatSoluble  Boolean             @default(false)
+  products      ProductIngredient[]
+  references    IntakeReference[]
+  results       AnalysisResult[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+}
+
+// Amount of one ingredient in one product: as printed on the label, plus a
+// normalized value (unit conversion done in code, not by the LLM).
+model ProductIngredient {
+  id              Int        @id @default(autoincrement())
+  productId       Int
+  product         Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredientId    Int
+  ingredient      Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  amount          Decimal    @db.Decimal(12, 4) // as labeled
+  unit            String // as labeled (mg / IU / ㎍)
+  amountCanonical Decimal?   @db.Decimal(12, 4) // normalized to ingredient.canonicalUnit
+
+  @@unique([productId, ingredientId])
+  @@index([ingredientId])
+}
+
+// Age/sex-banded recommended intake (RDA/AI) and upper limit (UL) for a
+// nutrient, with a public citation (KDRIs / 식약처). The safety ground truth
+// the deterministic rules compare summed amounts against.
+model IntakeReference {
+  id           Int        @id @default(autoincrement())
+  ingredientId Int
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  ageMinMonths Int
+  ageMaxMonths Int
+  sex          Sex? // null = applies to both
+  recommended  Decimal?   @db.Decimal(12, 4) // RDA / AI
+  upperLimit   Decimal?   @db.Decimal(12, 4) // UL (상한섭취량)
+  unit         String
+  source       String // e.g. "KDRIs 2020 / 식약처"
+  sourceUrl    String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([ingredientId, ageMinMonths, ageMaxMonths])
+}
+
+// ─── Analysis (the trust report) ─────────────────────────────────────
+enum ProductRole {
+  CURRENT // 지금 먹이는 제품
+  CANDIDATE // 새 후보
+}
+
+enum Verdict {
+  SAFE // 중복 없음 / 범위 내
+  DUPLICATE // 여러 제품에 중복되나 상한 이내
+  OVER // 상한 초과 (과다)
+  UNKNOWN // 데이터 없음 → "확인 불가"
+}
+
+// One check session: a child (or just an age) + selected products →
+// computed per-ingredient verdicts + recommended alternatives.
+model Analysis {
+  id              Int                      @id @default(autoincrement())
+  childId         Int?
+  child           Child?                   @relation(fields: [childId], references: [id], onDelete: SetNull)
+  userId          Int?
+  user            User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ageMonths       Int // snapshot of the age used for this report
+  products        AnalysisProduct[]
+  results         AnalysisResult[]
+  recommendations AnalysisRecommendation[]
+  createdAt       DateTime                 @default(now())
+
+  @@index([childId])
+  @@index([userId])
+}
+
+model AnalysisProduct {
+  id         Int         @id @default(autoincrement())
+  analysisId Int
+  analysis   Analysis    @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  productId  Int
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  role       ProductRole
+
+  @@unique([analysisId, productId])
+  @@index([productId])
+}
+
+// One computed line of the report: summed amount across products for an
+// ingredient, compared to the age-banded reference by deterministic code.
+model AnalysisResult {
+  id                   Int        @id @default(autoincrement())
+  analysisId           Int
+  analysis             Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  ingredientId         Int
+  ingredient           Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  totalAmount          Decimal    @db.Decimal(12, 4)
+  unit                 String
+  recommended          Decimal?   @db.Decimal(12, 4)
+  upperLimit           Decimal?   @db.Decimal(12, 4)
+  percentOfRecommended Float?
+  verdict              Verdict
+
+  @@unique([analysisId, ingredientId])
+  @@index([ingredientId])
+}
+
+model AnalysisRecommendation {
+  id         Int      @id @default(autoincrement())
+  analysisId Int
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reason     String // why this alternative (with evidence)
+  createdAt  DateTime @default(now())
+
+  @@index([analysisId])
+  @@index([productId])
 }
