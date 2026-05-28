@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# turbo
+.turbo/
+
+# build output
+dist/
+.next/
+out/
+build/
+
+# test / coverage
+coverage/
+test-results/
+playwright-report/
+
+# prisma generated client (regenerated on install)
+apps/api/generated/
+
+# local databases (PGlite)
+*.db
+apps/web/local.db*
+
+# env (keep .env.example committed)
+.env.local
+*.env.local
+.env*.local
+# api .env holds the Supabase secret — keep it out of git
+apps/api/.env
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

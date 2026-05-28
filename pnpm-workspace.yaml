@@ -1,0 +1,20 @@
+packages:
+  - "apps/*"
+
+# Native deps whose install/build scripts are allowed to run (pnpm 10 blocks them by default).
+onlyBuiltDependencies:
+  - "@nestjs/core"
+  - "@swc/core"
+  - "@sentry/cli"
+  - "@tailwindcss/oxide"
+  - "@parcel/watcher"
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "prisma"
+  - "@clerk/shared"
+  - "esbuild"
+  - "sharp"
+  - "core-js"
+  - "unrs-resolver"
+  - "msgpackr-extract"
+  - "lefthook"

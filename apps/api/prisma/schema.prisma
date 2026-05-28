@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Runtime queries. On Supabase use the POOLED url (port 6543, ?pgbouncer=true).
+  url       = env("DATABASE_URL")
+  // Migrations need a direct connection. On Supabase use the DIRECT url (port 5432).
+  // For local docker, DIRECT_URL == DATABASE_URL.
+  directUrl = env("DIRECT_URL")
+}
+
+// 👇 Define your domain models here. The User below is a sample — change it freely.
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

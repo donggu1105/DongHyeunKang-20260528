@@ -1,0 +1,33 @@
+name: levit
+root: .
+
+windows:
+  # 공통 레이아웃: main-horizontal (상단 1 main pane + 하단 2 pane 좌/우)
+  # panes 배열 순서 = [top, bottom-left, bottom-right]
+
+  # worker0 윈도우 — claude 자동 실행 안 함
+  - worker0:
+      layout: main-horizontal
+      panes:
+        - 'tmux set -g pane-border-status top; tmux set -g pane-border-format " #{pane_title} "; tmux select-pane -T w0-a; clear'
+        - 'tmux select-pane -T w0-b; clear'
+        - 'tmux select-pane -T w0-c; clear'
+
+  # worker1 윈도우 — claude 자동 실행, run pane 은 하단 우측 고정
+  # 2x2 tiled: [top-left, top-right, bottom-left, bottom-right]
+  # run pane 에서 make dev 등을 실행
+  - worker1:
+      layout: tiled
+      panes:
+        - 'tmux select-pane -T w1-a; clear; claude'
+        - 'tmux select-pane -T w1-c; clear; claude'
+        - 'tmux select-pane -T w1-b; clear; claude'
+        - 'tmux select-pane -T run; clear'
+
+  # worker2 윈도우 — claude 자동 실행 안 함
+  - worker2:
+      layout: main-horizontal
+      panes:
+        - 'tmux select-pane -T w2-a; clear'
+        - 'tmux select-pane -T w2-b; clear'
+        - 'tmux select-pane -T w2-c; clear'
