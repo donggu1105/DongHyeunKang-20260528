@@ -21,4 +21,12 @@ describe('toCanonical', () => {
   it('returns null for an unknown / unconvertible unit', () => {
     expect(toCanonical(5, 'spoons', vitC)).toBeNull();
   });
+
+  it('returns null for IU when the ingredient has no IU conversion factor', () => {
+    expect(toCanonical(100, 'IU', vitC)).toBeNull(); // 비타민C has no IU factor
+  });
+
+  it('treats mass units case-insensitively', () => {
+    expect(toCanonical(1000, 'MCG', vitC)).toBe(1); // 1000mcg = 1mg regardless of case
+  });
 });

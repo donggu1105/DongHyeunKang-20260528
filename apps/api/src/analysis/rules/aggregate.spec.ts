@@ -18,4 +18,13 @@ describe('aggregateByIngredient', () => {
     const bad: ProductInput[] = [{ productId: 12, name: 'C', amounts: [{ ingredientId: 1, amount: 5, unit: 'spoons' }] }];
     expect(aggregateByIngredient(bad, ings).get(1)).toEqual({ totalCanonical: null, productCount: 1 });
   });
+  it('rounds away binary FP noise at label scale (100mcg + 200mcg = 0.3mg, not 0.30000000000000004)', () => {
+    const vitC: IngredientDef = { id: 2, name: '비타민C', canonicalUnit: 'mg', isFatSoluble: false };
+    const vcMap = new Map<number, IngredientDef>([[2, vitC]]);
+    const vcProducts: ProductInput[] = [
+      { productId: 20, name: 'A', amounts: [{ ingredientId: 2, amount: 100, unit: 'mcg' }] },
+      { productId: 21, name: 'B', amounts: [{ ingredientId: 2, amount: 200, unit: 'mcg' }] },
+    ];
+    expect(aggregateByIngredient(vcProducts, vcMap).get(2)?.totalCanonical).toBe(0.3);
+  });
 });

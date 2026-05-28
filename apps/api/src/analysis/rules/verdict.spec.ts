@@ -21,4 +21,22 @@ describe('judge', () => {
   it('SAFE when single product and within UL', () => {
     expect(judge(5, 1, ref).verdict).toBe('SAFE');
   });
+  it('treats total === upperLimit as SAFE (not OVER) for a single product', () => {
+    expect(judge(40, 1, ref).verdict).toBe('SAFE'); // UL=40, exactly at limit is not over
+  });
+  it('treats total === upperLimit as DUPLICATE when in >=2 products', () => {
+    expect(judge(40, 2, ref).verdict).toBe('DUPLICATE');
+  });
+  it('percentOfRecommended is null when recommended is null (verdict unaffected)', () => {
+    const noRda: ReferenceDef = { ...ref, recommended: null };
+    const r = judge(10, 1, noRda);
+    expect(r.percentOfRecommended).toBeNull();
+    expect(r.verdict).toBe('SAFE'); // within UL
+  });
+  it('percentOfRecommended is null when recommended is 0 (no Infinity/NaN)', () => {
+    const zeroRda: ReferenceDef = { ...ref, recommended: 0 };
+    const r = judge(10, 1, zeroRda);
+    expect(r.percentOfRecommended).toBeNull();
+    expect(Number.isFinite(r.percentOfRecommended as number)).toBe(false);
+  });
 });

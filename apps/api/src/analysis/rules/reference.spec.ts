@@ -21,4 +21,12 @@ describe('selectReference', () => {
     ];
     expect(selectReference(withSex, 96, 'FEMALE')?.upperLimit).toBe(35);
   });
+  it('returns null rather than guessing the opposite-sex band (fail-safe)', () => {
+    const maleOnly: ReferenceDef[] = [{ ...refs[0], sex: 'MALE', upperLimit: 45 }];
+    expect(selectReference(maleOnly, 96, 'FEMALE')).toBeNull();
+  });
+  it('returns null when only a sexed band exists and no sex was requested', () => {
+    const sexedOnly: ReferenceDef[] = [{ ...refs[0], sex: 'MALE', upperLimit: 45 }];
+    expect(selectReference(sexedOnly, 96, null)).toBeNull();
+  });
 });
