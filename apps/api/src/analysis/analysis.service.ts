@@ -1,8 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ExplanationService } from './explanation.service';
 import { AnalyzeRequestDto } from './dto/analyze.dto';
 import { runAnalysis } from './rules/analyze';
 import type { IngredientDef, ProductInput, ReferenceDef, NutrientResult } from './analysis.types';
+
+type ExplainedNutrient = NutrientResult & { ingredientName: string; explanation: string };
 
 const DISCLAIMER = '본 결과는 참고용이며 약사·소아과 상담을 권장합니다.';
 const num = (d: unknown): number | null => {
@@ -13,9 +16,12 @@ const num = (d: unknown): number | null => {
 
 @Injectable()
 export class AnalysisService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly explanation: ExplanationService,
+  ) {}
 
-  async analyze(dto: AnalyzeRequestDto): Promise<{ byNutrient: NutrientResult[]; disclaimer: string }> {
+  async analyze(dto: AnalyzeRequestDto): Promise<{ byNutrient: ExplainedNutrient[]; disclaimer: string }> {
     // 의도적 load-all: MVP 규모(성분 ~5-8개)라 전량 로드가 단순하고 충분함.
     const ingRows = await this.prisma.ingredient.findMany();
     const ingredients: IngredientDef[] = ingRows.map((i) => ({ id: i.id, name: i.name, canonicalUnit: i.canonicalUnit, isFatSoluble: i.isFatSoluble }));
@@ -45,6 +51,16 @@ export class AnalysisService {
     }));
 
     const byNutrient = runAnalysis({ ageMonths: dto.ageMonths, sex: dto.sex ?? null, products, ingredients, references });
-    return { byNutrient, disclaimer: DISCLAIMER };
+
+    const nameById = new Map(ingredients.map((i) => [i.id, i.name]));
+    const explained = await Promise.all(
+      byNutrient.map(async (r): Promise<ExplainedNutrient> => {
+        const ingredientName = nameById.get(r.ingredientId) ?? String(r.ingredientId);
+        const explanation = await this.explanation.explain({ ...r, ingredientName });
+        return { ...r, ingredientName, explanation };
+      }),
+    );
+
+    return { byNutrient: explained, disclaimer: DISCLAIMER };
   }
 }

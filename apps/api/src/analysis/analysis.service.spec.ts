@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
+import { ExplanationService } from './explanation.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const prismaMock = {
@@ -14,7 +15,11 @@ describe('AnalysisService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const mod = await Test.createTestingModule({
-      providers: [AnalysisService, { provide: PrismaService, useValue: prismaMock }],
+      providers: [
+        AnalysisService,
+        { provide: PrismaService, useValue: prismaMock },
+        { provide: ExplanationService, useValue: { explain: jest.fn().mockResolvedValue('설명') } },
+      ],
     }).compile();
     service = mod.get(AnalysisService);
   });
@@ -30,6 +35,8 @@ describe('AnalysisService', () => {
     ]);
     const out = await service.analyze({ ageMonths: 96, sex: null, productIds: [10, 11] });
     expect(out.byNutrient[0].verdict).toBe('DUPLICATE');
+    expect(out.byNutrient[0].ingredientName).toBe('비타민D');
+    expect(out.byNutrient[0].explanation).toBe('설명');
     expect(out.disclaimer).toContain('참고용');
   });
 
