@@ -20,4 +20,12 @@ describe('ExplanationService', () => {
     expect(prompt).toContain('KDRIs 2020');
     expect(prompt).toMatch(/추측 금지|제공된/);
   });
+
+  it('returns a non-empty fallback string and does not throw when the LLM call fails', async () => {
+    openaiMock.chat.completions.create.mockRejectedValue(new Error('401 no key'));
+    const out = await svc.explain({ ingredientName: '비타민D', verdict: 'OVER', totalCanonical: 41, unit: '㎍', upperLimit: 40, percentOfRecommended: 820, reference: null });
+    expect(typeof out).toBe('string');
+    expect(out.length).toBeGreaterThan(0);
+    expect(out).not.toContain('확인 불가'); // not the UNKNOWN message
+  });
 });

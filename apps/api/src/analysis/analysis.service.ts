@@ -55,8 +55,12 @@ export class AnalysisService {
     const nameById = new Map(ingredients.map((i) => [i.id, i.name]));
     const explained = await Promise.all(
       byNutrient.map(async (r): Promise<ExplainedNutrient> => {
+        // 방어 코드: ingredients와 results는 동일 로드에서 파생되므로 fallback은 실제로 발동하지 않아야 한다.
         const ingredientName = nameById.get(r.ingredientId) ?? String(r.ingredientId);
-        const explanation = await this.explanation.explain({ ...r, ingredientName });
+        // 설명(LLM)은 부가 정보 — 실패해도 결정론적 안전 판정 배치를 reject 시키지 않는다.
+        const explanation = await this.explanation
+          .explain({ ...r, ingredientName })
+          .catch(() => '설명을 불러오지 못했습니다.');
         return { ...r, ingredientName, explanation };
       }),
     );
