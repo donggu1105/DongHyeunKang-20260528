@@ -8,6 +8,7 @@ import { NudgeModal } from '@/components/checker/NudgeModal';
 import { PERSONA_SCENARIOS } from '@/components/checker/personaScenarios';
 import type { PersonaScenario } from '@/components/checker/personaScenarios';
 import { ProductPicker } from '@/components/checker/ProductPicker';
+import { SetSection } from '@/components/checker/SetSection';
 import type { CatalogProduct } from '@/libs/Api';
 import { getProducts } from '@/libs/Api';
 
@@ -20,6 +21,7 @@ export default function CheckPage() {
   const [cart, setCart] = useState<number[]>([]);
   const [ageInput, setAgeInput] = useState('');
   const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +65,20 @@ export default function CheckPage() {
     }
   };
 
+  // 페르소나 선택 — 나이 프리필 + 해당 세트 섹션으로 스크롤·강조 (제품 자동 담기는 안 함)
+  const selectPersona = (s: PersonaScenario) => {
+    setSelectedPersonaId(s.id);
+    if (s.ageYears !== null) {
+      setAgeInput(String(s.ageYears));
+    }
+    // 클라이언트 핸들러 — 해당 세트 섹션으로 스크롤
+    setTimeout(() => {
+      document
+        .querySelector(`#set-${s.id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  };
+
   const ageYears = ageInput.trim() === '' ? null : Number(ageInput);
   const ageValid = ageYears !== null && !Number.isNaN(ageYears) && ageYears >= 0 && ageYears <= 18;
   // 모달에 number 프롭으로 넘기기 위한 정규화 (ageValid일 때만 사용)
@@ -81,41 +97,59 @@ export default function CheckPage() {
           <h1 className="text-2xl font-bold text-gray-900">키즈 영양제 스토어</h1>
           <p className="text-sm text-gray-500">담고 결제 전에 안전까지 확인해 드려요</p>
         </button>
-        {view === 'shop' && (
-          <button
-            className="relative shrink-0 cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-            disabled={cart.length === 0}
-            onClick={() => {
-              setView('checkout');
-            }}
-            type="button"
-          >
-            장바구니 {cart.length > 0 ? `(${cart.length})` : ''}
-          </button>
-        )}
       </header>
 
       {view === 'shop' && (
         <>
-          {/* 추천 세트 빠른 담기 */}
           {catalogState === 'ready' && (
-            <section className="mb-6">
-              <h2 className="mb-2 text-sm font-semibold text-gray-900">이런 세트는 어때요?</h2>
-              <div className="flex flex-wrap gap-2">
+            <>
+              {/* 페르소나 요약 — 고르면 나이 프리필 + 해당 세트로 스크롤·강조 */}
+              <section className="mb-6">
+                <h2 className="mb-1 font-semibold text-gray-900 text-sm">어떤 상황에 가까우세요?</h2>
+                <p className="mb-3 text-gray-500 text-xs">
+                  고르면 맞춤 세트로 안내하고 나이를 미리 채워 드려요.
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
+                    <button
+                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition ${
+                        selectedPersonaId === s.id
+                          ? 'border-blue-400 bg-blue-50/60'
+                          : 'border-gray-200 hover:border-blue-300'
+                      }`}
+                      key={s.id}
+                      onClick={() => {
+                        selectPersona(s);
+                      }}
+                      type="button"
+                    >
+                      <span aria-hidden="true" className="text-2xl">
+                        {s.emoji}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-gray-900 text-sm">{s.title}</span>
+                        <span className="block truncate text-gray-500 text-xs">{s.pain}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* 세트 컬렉션 섹션들 */}
+              <div className="mb-10 flex flex-col gap-10">
                 {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
-                  <button
-                    className="cursor-pointer rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+                  <SetSection
+                    cart={cart}
+                    highlighted={selectedPersonaId === s.id}
                     key={s.id}
-                    onClick={() => {
-                      addSet(s);
-                    }}
-                    type="button"
-                  >
-                    {s.emoji} {s.setName} +{s.productNames.length}
-                  </button>
+                    onAddSet={addSet}
+                    onToggle={toggleCart}
+                    products={products}
+                    scenario={s}
+                  />
                 ))}
               </div>
-            </section>
+            </>
           )}
 
           {catalogState === 'loading' && (
@@ -128,28 +162,10 @@ export default function CheckPage() {
             </div>
           )}
           {catalogState === 'ready' && (
-            <ProductPicker onToggle={toggleCart} products={products} selectedIds={cart} />
-          )}
-
-          {/* 하단 고정 카트 요약 */}
-          {cart.length > 0 && (
-            <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200 bg-white/95 backdrop-blur">
-              <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">담은 제품 {cart.length}개</p>
-                  <p className="text-xs text-gray-500">합계 {formatKRW(total)}</p>
-                </div>
-                <button
-                  className="shrink-0 cursor-pointer rounded-lg bg-blue-600 px-5 py-2 text-base font-semibold text-white transition hover:bg-blue-700"
-                  onClick={() => {
-                    setView('checkout');
-                  }}
-                  type="button"
-                >
-                  장바구니 보기 →
-                </button>
-              </div>
-            </div>
+            <section>
+              <h2 className="mb-3 font-bold text-gray-900 text-lg">전체 상품</h2>
+              <ProductPicker onToggle={toggleCart} products={products} selectedIds={cart} />
+            </section>
           )}
         </>
       )}
@@ -286,6 +302,34 @@ export default function CheckPage() {
           }}
           productIds={cart}
         />
+      )}
+
+      {view === 'shop' && cart.length > 0 && (
+        <button
+          aria-label={`장바구니 ${cart.length}개 — 결제로`}
+          className="fixed right-5 bottom-5 z-30 flex size-14 cursor-pointer items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition hover:bg-blue-700"
+          onClick={() => {
+            setView('checkout');
+          }}
+          type="button"
+        >
+          <svg
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12A1.125 1.125 0 0119.748 21H4.252a1.125 1.125 0 01-1.121-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="-right-1 -top-1 absolute flex size-6 items-center justify-center rounded-full bg-red-500 font-bold text-xs">
+            {cart.length}
+          </span>
+        </button>
       )}
     </main>
   );
