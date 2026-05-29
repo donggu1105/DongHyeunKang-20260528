@@ -94,7 +94,7 @@ export default function CheckPage() {
           }}
           type="button"
         >
-          <h1 className="text-2xl font-bold text-gray-900">키즈 영양제 스토어</h1>
+          <h1 className="text-2xl font-bold text-gray-900">levit - 아이 영양제</h1>
           <p className="text-sm text-gray-500">담고 결제 전에 안전까지 확인해 드려요</p>
         </button>
       </header>
