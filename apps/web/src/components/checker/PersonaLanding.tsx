@@ -52,8 +52,27 @@ export function PersonaLanding({ onSelect }: PersonaLandingProps) {
                 </span>
 
                 <span className="flex min-w-0 flex-col gap-1">
-                  <span className="text-base font-semibold text-gray-900">{scenario.title}</span>
+                  {scenario.setName ? (
+                    <>
+                      <span className="text-base font-bold text-gray-900">{scenario.setName}</span>
+                      <span className="text-xs font-medium text-gray-500">{scenario.title}</span>
+                    </>
+                  ) : (
+                    <span className="text-base font-semibold text-gray-900">{scenario.title}</span>
+                  )}
                   <span className="text-sm text-gray-600">{scenario.pain}</span>
+                  {scenario.setName && (
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        {`추천 ${scenario.productNames.length}개`}
+                      </span>
+                      {scenario.ageYears !== null && (
+                        <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          {`만 ${scenario.ageYears}세`}
+                        </span>
+                      )}
+                    </span>
+                  )}
                   {scenario.hint && (
                     <span className="mt-1 inline-flex w-fit rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                       {scenario.hint}

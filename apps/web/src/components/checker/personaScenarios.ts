@@ -22,12 +22,15 @@ export type PersonaScenario = {
   productNames: string[];
   /** 카드 하단 미리보기 힌트 (이 상황에서 무엇을 보게 되는지). 직접 선택은 생략 */
   hint?: string;
+  /** 커머스형 "테마 세트" 라벨 — 카드를 상품 세트처럼 보이게 한다. 직접 선택은 없음 */
+  setName?: string;
 };
 
 export const PERSONA_SCENARIOS: PersonaScenario[] = [
   {
     id: 'care',
     emoji: '🤧',
+    setName: '환절기 면역 케어 세트',
     title: '면역 케어맘',
     pain: '여러 개 먹이는데 겹칠까 걱정돼요',
     ageYears: 8,
@@ -42,6 +45,7 @@ export const PERSONA_SCENARIOS: PersonaScenario[] = [
   {
     id: 'working',
     emoji: '⏱️',
+    setName: '바쁜 아침 비타민D 점검',
     title: '워킹맘',
     pain: '바빠서 딱 하나만 빠르게 확인하고 싶어요',
     ageYears: 6,
@@ -51,6 +55,7 @@ export const PERSONA_SCENARIOS: PersonaScenario[] = [
   {
     id: 'beginner',
     emoji: '🍼',
+    setName: '첫 영양제 입문 세트',
     title: '초보맘',
     pain: '처음이라 뭐가 안전한지 모르겠어요',
     ageYears: 3,
