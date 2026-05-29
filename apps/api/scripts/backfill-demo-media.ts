@@ -50,7 +50,10 @@ async function main() {
     const products = await prisma.product.findMany({ orderBy: { id: 'asc' } });
     for (const p of products) {
       const rand = rng(p.id);
-      const img = images[Math.floor(rand() * images.length)];
+      // LCG 첫 출력은 seed와 상관도가 높아 연속 id에서 이미지가 한두 개로 쏠린다.
+      // 이미지는 id 곱셈 해시로 고르게 분산, 가격은 워밍업 뒤 rand로(원래 분산되던 호출).
+      const img = images[(Math.imul(p.id, 2654435761) >>> 0) % images.length];
+      rand();
       const listPrice = (9 + Math.floor(rand() * 52)) * 1000; // 9,000~60,000
       const discount = 0.2 + rand() * 0.3;                    // 20~50%
       const price = Math.round((listPrice * (1 - discount)) / 100) * 100;
