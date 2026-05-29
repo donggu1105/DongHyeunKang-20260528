@@ -65,6 +65,7 @@ The frontend works out of the box (embedded PGlite); the backend connects once `
 | `make db-studio`  | Open Prisma Studio                                       |
 | `make build`      | Build all apps                                           |
 | `make lint`       | Lint all apps                                            |
+| `make deploy`     | Production deploy: API → Railway (git push) + Web → Vercel|
 
 ## Database (Supabase + Prisma)
 
@@ -92,3 +93,12 @@ CORS is enabled on the API (`apps/api/src/main.ts`). To call the API from the we
 - **Database** → Supabase (already remote; set the same `DATABASE_URL` / `DIRECT_URL` as env vars on the host).
 - **Frontend (`apps/web`)** → **Vercel**. Import the repo, set **Root Directory = `apps/web`**. Next.js is native to Vercel.
 - **Backend (`apps/api`)** → **Railway** (recommended for a long-running NestJS server). Set **Root Directory = `apps/api`**, build `pnpm build`, start `node dist/main`, and add `DATABASE_URL` + `DIRECT_URL`. (Vercel can also host it via Fluid Compute if you prefer a single platform.)
+
+### `make deploy`
+
+Once the platforms are linked, `make deploy` ships both:
+
+- **API (Railway)** — `git push origin main`; Railway's GitHub integration auto-builds `apps/api` on new commits.
+- **Web (Vercel)** — `cd apps/web && vercel --prod` (needs `vercel login` once; project is CLI-deployed, not git-connected).
+
+Live: web `https://levit-trust-web.vercel.app` · API `https://api-production-ca14e.up.railway.app`.
