@@ -62,9 +62,13 @@ export function ProductCard({ product, selected, onToggle }: Props) {
       <div className="flex flex-1 flex-col gap-1 p-4">
         <p className="line-clamp-2 min-h-[2.5rem] font-semibold text-gray-900">{product.name}</p>
         {list && off !== null && <p className="text-sm text-gray-400 line-through">{list}</p>}
-        <p className="flex items-baseline gap-2">
-          {sale && <span className="text-lg font-bold text-gray-900">{sale}</span>}
-          {off !== null && <span className="text-sm font-bold text-red-600">{off}%</span>}
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          {sale && (
+            <span className="whitespace-nowrap font-bold text-gray-900 text-lg">{sale}</span>
+          )}
+          {off !== null && (
+            <span className="whitespace-nowrap font-bold text-red-600 text-sm">{off}%</span>
+          )}
         </p>
         <div className="mt-1 flex flex-wrap gap-1 text-xs text-gray-500">
           {product.form && <span className="rounded bg-gray-100 px-2 py-0.5">{product.form}</span>}
