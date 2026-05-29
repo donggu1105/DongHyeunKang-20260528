@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { seedStandards } from './seed/standards';
 import { seedProducts } from './seed/products';
+import { seedCrawledProducts } from './seed/crawled-products';
 
 /**
  * Idempotent reseed against the real database.
@@ -29,8 +30,11 @@ async function main() {
       return seedStandards(tx);
     });
 
-    // 6: create products + nested ingredients.
+    // 6: create demo products + nested ingredients.
     const products = await seedProducts(prisma);
+
+    // 7: ADDITIVE — 식약처 크롤 산출물(있으면)을 카탈로그에 반영.
+    const crawled = await seedCrawledProducts(prisma);
 
     // Verify by re-counting from the DB (not by trusting in-memory totals).
     const [ingredients, references, productCount, productIngredients] =
@@ -48,11 +52,13 @@ async function main() {
     console.log('  productIngredients: ', productIngredients);
 
     // Sanity check: counts returned by the seed functions should match the DB.
+    // Products/productIngredients = demo (products.ts) + crawled (식약처).
     if (
       ingredients !== standards.ingredients ||
       references !== standards.references ||
-      productCount !== products.products ||
-      productIngredients !== products.productIngredients
+      productCount !== products.products + crawled.products ||
+      productIngredients !==
+        products.productIngredients + crawled.productIngredients
     ) {
       throw new Error(
         'Seed count mismatch between in-memory totals and DB counts.',
