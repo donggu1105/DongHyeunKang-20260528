@@ -9,12 +9,14 @@ import type { PersonaScenario } from '@/components/checker/personaScenarios';
 import { ProductPicker } from '@/components/checker/ProductPicker';
 import { RecommendedSetCard } from '@/components/checker/RecommendedSetCard';
 import { ReportCard } from '@/components/checker/ReportCard';
+import { StepProgress } from '@/components/checker/StepProgress';
+import { StickyCartBar } from '@/components/checker/StickyCartBar';
 import type { AnalyzeResponse, CatalogProduct } from '@/libs/Api';
 import { analyze, ApiError, getProducts } from '@/libs/Api';
 
 export default function CheckPage() {
-  // 진입 상태: 페르소나 랜딩 ↔ 체커. 랜딩은 기존 체커 위에 얹은 데모 레이어다.
-  const [entry, setEntry] = useState<'landing' | 'checker'>('landing');
+  // 4단계 스텝: 0=상황 고르기, 1=제품 담기, 2=나이 입력, 3=안전 리포트
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [persona, setPersona] = useState<PersonaScenario | null>(null);
 
   const [products, setProducts] = useState<CatalogProduct[]>([]);
@@ -32,24 +34,26 @@ export default function CheckPage() {
 
   useEffect(() => {
     let active = true;
-    getProducts()
-      .then((data) => {
+    const load = async () => {
+      try {
+        const data = await getProducts();
         if (active) {
           setProducts(data);
           setCatalogState('ready');
         }
-      })
-      .catch(() => {
+      } catch {
         if (active) {
           setCatalogState('error');
         }
-      });
+      }
+    };
+    void load();
     return () => {
       active = false;
     };
   }, []);
 
-  // 페르소나 선택 → 나이·장바구니 프리필 후 체커로 진입.
+  // 페르소나 선택 → 나이·장바구니 프리필 후 제품 담기 단계로 진입.
   // 프리셋은 제품 "이름"으로 지정 — 카탈로그에서 id로 해석하고, 없는 이름은 건너뛰고 경고한다.
   const handlePersonaSelect = (scenario: PersonaScenario) => {
     const ids: number[] = [];
@@ -66,12 +70,12 @@ export default function CheckPage() {
     setReport(null);
     setAnalyzeError(null);
     setShowAddMore(false);
-    setEntry('checker');
+    setStep(1);
   };
 
-  // 랜딩으로 복귀 — 상태 초기화
+  // 랜딩(상황 고르기)으로 복귀 — 상태 초기화
   const backToLanding = () => {
-    setEntry('landing');
+    setStep(0);
     setPersona(null);
     setCart([]);
     setAgeYears(null);
@@ -97,9 +101,12 @@ export default function CheckPage() {
         productIds: cart,
       });
       setReport(result);
-    } catch (err) {
+      setStep(3);
+    } catch (error) {
       setAnalyzeError(
-        err instanceof ApiError ? err.message : '분석 중 오류가 발생했습니다. 다시 시도해 주세요.',
+        error instanceof ApiError
+          ? error.message
+          : '분석 중 오류가 발생했습니다. 다시 시도해 주세요.',
       );
     } finally {
       setAnalyzing(false);
@@ -109,29 +116,31 @@ export default function CheckPage() {
   // "추가하기" 후 재분석 (이미 나이를 알고 있으므로 입력 없이 바로)
   const reAnalyze = () => {
     if (ageYears !== null) {
-      runAnalyze(ageYears);
+      void runAnalyze(ageYears);
     }
   };
 
   const cartProducts = products.filter((p) => cart.includes(p.id));
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 text-gray-800">
+    <main className="mx-auto max-w-2xl px-4 py-10 pb-28 text-gray-800">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">우리 아이 영양제 안전 체크</h1>
+        <h1 className="font-bold text-3xl text-gray-900">우리 아이 영양제 안전 체크</h1>
         <p className="mt-2 text-base text-gray-600">
           먹이는 영양제를 담고 아이 나이만 입력하면, 중복·과다 섭취 위험을 근거와 함께 확인해
           드려요. 5분이면 충분합니다.
         </p>
       </header>
 
-      {entry === 'landing' ? (
-        <PersonaLanding onSelect={handlePersonaSelect} />
-      ) : (
+      <StepProgress current={step} />
+
+      {step === 0 && <PersonaLanding onSelect={handlePersonaSelect} />}
+
+      {step === 1 && (
         <>
-          {/* 맥락 배너: 어떤 상황으로 들어왔는지 + 랜딩으로 복귀 */}
+          {/* 맥락 배너: 어떤 상황으로 들어왔는지 + 상황 다시 고르기 */}
           <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-            <p className="text-sm text-gray-700">
+            <p className="text-gray-700 text-sm">
               {persona && persona.id !== 'manual' ? (
                 <>
                   <span aria-hidden="true">{persona.emoji}</span>{' '}
@@ -143,28 +152,28 @@ export default function CheckPage() {
               )}
             </p>
             <button
-              type="button"
+              className="shrink-0 cursor-pointer font-semibold text-blue-700 text-sm hover:underline"
               onClick={backToLanding}
-              className="shrink-0 cursor-pointer text-sm font-semibold text-blue-700 hover:underline"
+              type="button"
             >
               상황 다시 고르기
             </button>
           </div>
 
-          {/* 1) 카탈로그 */}
+          {/* 카탈로그 */}
           <section className="mb-8">
-            <h2 className="mb-3 text-xl font-semibold text-gray-900">
-              1. 먹이는 영양제를 담아주세요
+            <h2 className="mb-3 font-semibold text-gray-900 text-xl">
+              먹이는 영양제를 담아주세요
             </h2>
 
             {catalogState === 'loading' && (
-              <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
+              <p className="rounded-lg bg-gray-50 p-4 text-gray-500 text-sm">
                 제품을 불러오는 중…
               </p>
             )}
 
             {catalogState === 'error' && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 text-sm">
                 <p className="font-semibold">제품 목록을 불러오지 못했습니다.</p>
                 <p className="mt-1 text-red-600">
                   API 서버가 실행 중인지 확인해 주세요 (로컬: http://localhost:3001).
@@ -173,72 +182,83 @@ export default function CheckPage() {
             )}
 
             {catalogState === 'ready' && (
-              <ProductPicker products={products} selectedIds={cart} onToggle={toggleCart} />
+              <ProductPicker onToggle={toggleCart} products={products} selectedIds={cart} />
             )}
           </section>
+        </>
+      )}
 
-          {/* 2) 트리거: 카트에 1개 이상 담기면 나이 입력 노출 */}
-          {cart.length > 0 && (
-            <section className="mb-8 rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
-              <p className="mb-3 text-sm text-gray-600">
-                담은 제품 <strong>{cart.length}개</strong>:{' '}
-                {cartProducts.map((p) => p.name).join(', ')}
-              </p>
-              <AgeStep
-                onSubmit={runAnalyze}
-                loading={analyzing}
-                initialYears={persona?.ageYears ?? null}
-              />
-            </section>
-          )}
+      {step === 2 && (
+        <section className="mb-8 rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
+          <p className="mb-3 text-gray-600 text-sm">
+            담은 제품 <strong>{cart.length}개</strong>:{' '}
+            {cartProducts.map((p) => p.name).join(', ')}
+          </p>
+          <AgeStep
+            initialYears={persona?.ageYears ?? null}
+            loading={analyzing}
+            onSubmit={runAnalyze}
+          />
+        </section>
+      )}
 
-          {/* 분석 에러 */}
+      {step === 3 && report && ageYears !== null && (
+        <section className="mb-8">
           {analyzeError && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 text-sm">
               {analyzeError}
             </div>
           )}
 
-          {/* 3) 리포트 */}
-          {report && ageYears !== null && (
-            <section className="mb-8">
-              <h2 className="mb-3 text-xl font-semibold text-gray-900">분석 결과</h2>
+          <h2 className="mb-3 font-semibold text-gray-900 text-xl">분석 결과</h2>
 
-              <RecommendedSetCard report={report} ageYears={ageYears} />
-              <div className="mt-4">
-                <ReportCard report={report} />
-              </div>
+          <RecommendedSetCard ageYears={ageYears} report={report} />
+          <div className="mt-4">
+            <ReportCard report={report} />
+          </div>
 
-              {/* 선택 단계 (차별점): 다른 영양제 추가 → 재분석 */}
-              <div className="mt-6 rounded-2xl border border-dashed border-gray-300 bg-white p-5">
-                {showAddMore ? (
-                  <>
-                    <h3 className="mb-3 text-base font-semibold text-gray-900">
-                      추가로 먹는 영양제를 담아주세요
-                    </h3>
-                    <ProductPicker products={products} selectedIds={cart} onToggle={toggleCart} />
-                    <button
-                      type="button"
-                      onClick={reAnalyze}
-                      disabled={analyzing}
-                      className="mt-4 rounded-lg bg-blue-600 px-5 py-2 text-base font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
-                    >
-                      {analyzing ? '다시 분석 중…' : '추가해서 다시 확인하기'}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddMore(true)}
-                    className="text-base font-semibold text-blue-700 hover:underline"
-                  >
-                    ➕ 다른 영양제도 먹고 있나요? 추가하기
-                  </button>
-                )}
-              </div>
-            </section>
-          )}
-        </>
+          {/* 선택 단계 (차별점): 다른 영양제 추가 → 재분석 */}
+          <div className="mt-6 rounded-2xl border border-gray-300 border-dashed bg-white p-5">
+            {showAddMore ? (
+              <>
+                <h3 className="mb-3 font-semibold text-base text-gray-900">
+                  추가로 먹는 영양제를 담아주세요
+                </h3>
+                <ProductPicker onToggle={toggleCart} products={products} selectedIds={cart} />
+                <button
+                  className="mt-4 rounded-lg bg-blue-600 px-5 py-2 font-semibold text-base text-white transition hover:bg-blue-700 disabled:opacity-60"
+                  disabled={analyzing}
+                  onClick={reAnalyze}
+                  type="button"
+                >
+                  {analyzing ? '다시 분석 중…' : '추가해서 다시 확인하기'}
+                </button>
+              </>
+            ) : (
+              <button
+                className="font-semibold text-base text-blue-700 hover:underline"
+                onClick={() => {
+                  setShowAddMore(true);
+                }}
+                type="button"
+              >
+                ➕ 다른 영양제도 먹고 있나요? 추가하기
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* 스티키 카트바: step 1에서만 노출 (count===0이면 컴포넌트가 자체 숨김) */}
+      {step === 1 && (
+        <StickyCartBar
+          count={cart.length}
+          ctaLabel="다음: 나이 입력 →"
+          onCta={() => {
+            setStep(2);
+          }}
+          previewNames={cartProducts.map((p) => p.name)}
+        />
       )}
     </main>
   );
