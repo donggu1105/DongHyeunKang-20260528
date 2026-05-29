@@ -13,6 +13,33 @@ import type { CatalogProduct } from '@/libs/Api';
 import { getProducts } from '@/libs/Api';
 
 type View = 'shop' | 'checkout' | 'done';
+type AgeBand = 'all' | 'infant' | 'preschool' | 'school';
+
+// targetAgeLabel("N세 이상"/"전연령"/null) → 최소 권장 연령(세). 모르면 0.
+const AGE_LABEL_RE = /(\d+)\s*세/u;
+const minAgeOf = (label: string | null): number => {
+  if (!label || label.includes('전연령')) {
+    return 0;
+  }
+  const m = label.match(AGE_LABEL_RE);
+  return m ? Number(m[1]) : 0;
+};
+const AGE_BANDS = [
+  { key: 'all', label: '전체', max: 99 },
+  { key: 'infant', label: '영·유아', max: 2 },
+  { key: 'preschool', label: '3~6세', max: 6 },
+  { key: 'school', label: '7세+', max: 99 },
+] as const;
+
+// 연령 밴드 + 필터 결과를 컴포넌트 밖에서 도출 (CheckPage 복잡도 절감).
+const deriveBand = (ageBand: AgeBand, products: CatalogProduct[]) => {
+  const active = AGE_BANDS.find((b) => b.key === ageBand);
+  const bandMax = active?.max ?? 99;
+  // "이 연령 아이에게 적합" = 제품 최소권장연령 ≤ 밴드 상한
+  const filteredProducts =
+    ageBand === 'all' ? products : products.filter((p) => minAgeOf(p.targetAgeLabel) <= bandMax);
+  return { bandLabel: active?.label ?? '전체', filteredProducts };
+};
 
 export default function CheckPage() {
   const [view, setView] = useState<View>('shop');
@@ -22,6 +49,8 @@ export default function CheckPage() {
   const [ageInput, setAgeInput] = useState('');
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
+  const [ageBand, setAgeBand] = useState<AgeBand>('all');
+  const [visibleCount, setVisibleCount] = useState(8);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +75,13 @@ export default function CheckPage() {
 
   const cartProducts = products.filter((p) => cart.includes(p.id));
   const total = cartProducts.reduce((sum, p) => sum + (p.price ?? 0), 0);
+
+  const { bandLabel, filteredProducts } = deriveBand(ageBand, products);
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const selectBand = (key: AgeBand) => {
+    setAgeBand(key);
+    setVisibleCount(8);
+  };
 
   const toggleCart = (id: number) => {
     setCart((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -101,9 +137,18 @@ export default function CheckPage() {
 
       {view === 'shop' && (
         <>
+          {catalogState === 'loading' && (
+            <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">제품을 불러오는 중…</p>
+          )}
+          {catalogState === 'error' && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <p className="font-semibold">제품 목록을 불러오지 못했습니다.</p>
+              <p className="mt-1 text-red-600">API 서버 확인 (로컬: http://localhost:3001).</p>
+            </div>
+          )}
           {catalogState === 'ready' && (
             <>
-              {/* 페르소나 요약 — 고르면 나이 프리필 + 해당 세트로 스크롤·강조 */}
+              {/* 1) 페르소나 요약 — 고르면 나이 프리필 + 해당 세트로 스크롤·강조 */}
               <section className="mb-6">
                 <h2 className="mb-1 font-semibold text-gray-900 text-sm">어떤 상황에 가까우세요?</h2>
                 <p className="mb-3 text-gray-500 text-xs">
@@ -135,8 +180,65 @@ export default function CheckPage() {
                 </div>
               </section>
 
-              {/* 세트 컬렉션 섹션들 */}
-              <div className="mb-10 flex flex-col gap-10">
+              {/* 2) 전체 상품 — 연령 탭 필터 + 일부만 + 더보기 */}
+              <section className="mb-10">
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 className="font-bold text-gray-900 text-lg">
+                    전체 상품 <span className="font-medium text-gray-400 text-sm">· {bandLabel}</span>
+                  </h2>
+                  <div aria-label="연령별 보기" className="flex flex-wrap gap-1.5" role="tablist">
+                    {AGE_BANDS.map((b) => (
+                      <button
+                        aria-selected={ageBand === b.key}
+                        className={`cursor-pointer rounded-full px-3 py-1 font-medium text-sm transition ${
+                          ageBand === b.key
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        key={b.key}
+                        onClick={() => {
+                          selectBand(b.key);
+                        }}
+                        role="tab"
+                        type="button"
+                      >
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {filteredProducts.length === 0 ? (
+                  <p className="rounded-lg bg-gray-50 p-4 text-gray-500 text-sm">
+                    이 연령대 제품이 없어요.
+                  </p>
+                ) : (
+                  <>
+                    <ProductPicker
+                      onToggle={toggleCart}
+                      products={visibleProducts}
+                      selectedIds={cart}
+                    />
+                    {filteredProducts.length > visibleCount && (
+                      <div className="mt-5 text-center">
+                        <button
+                          className="cursor-pointer rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-700 text-sm transition hover:bg-gray-50"
+                          onClick={() => {
+                            setVisibleCount((c) => c + 8);
+                          }}
+                          type="button"
+                        >
+                          더보기 ({visibleCount}/{filteredProducts.length})
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
+
+              {/* 3) 세트 컬렉션 섹션들 — 아래에서 훑어보기 */}
+              <div className="flex flex-col gap-10">
+                <h2 className="font-bold text-gray-900 text-lg">상황별 추천 세트</h2>
                 {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
                   <SetSection
                     cart={cart}
@@ -150,22 +252,6 @@ export default function CheckPage() {
                 ))}
               </div>
             </>
-          )}
-
-          {catalogState === 'loading' && (
-            <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">제품을 불러오는 중…</p>
-          )}
-          {catalogState === 'error' && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              <p className="font-semibold">제품 목록을 불러오지 못했습니다.</p>
-              <p className="mt-1 text-red-600">API 서버 확인 (로컬: http://localhost:3001).</p>
-            </div>
-          )}
-          {catalogState === 'ready' && (
-            <section>
-              <h2 className="mb-3 font-bold text-gray-900 text-lg">전체 상품</h2>
-              <ProductPicker onToggle={toggleCart} products={products} selectedIds={cart} />
-            </section>
           )}
         </>
       )}
