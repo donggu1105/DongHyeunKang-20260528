@@ -20,7 +20,15 @@ describe('AnalysisService', () => {
         { provide: PrismaService, useValue: prismaMock },
         {
           provide: ExplanationService,
-          useValue: { explain: jest.fn().mockResolvedValue('설명') },
+          useValue: {
+            explainAll: jest
+              .fn()
+              .mockImplementation((items: { ingredientId: number }[]) =>
+                Promise.resolve(
+                  new Map(items.map((i) => [i.ingredientId, '설명'])),
+                ),
+              ),
+          },
         },
       ],
     }).compile();
@@ -76,7 +84,7 @@ describe('AnalysisService', () => {
         {
           provide: ExplanationService,
           useValue: {
-            explain: jest.fn().mockRejectedValue(new Error('llm down')),
+            explainAll: jest.fn().mockRejectedValue(new Error('llm down')),
           },
         },
       ],
