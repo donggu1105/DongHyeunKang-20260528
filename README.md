@@ -65,7 +65,7 @@ The frontend works out of the box (embedded PGlite); the backend connects once `
 | `make db-studio`  | Open Prisma Studio                                       |
 | `make build`      | Build all apps                                           |
 | `make lint`       | Lint all apps                                            |
-| `make deploy`     | Production deploy: API → Railway (git push) + Web → Vercel|
+| `make deploy`     | Production deploy: API → Railway (`railway up`) + Web → Vercel|
 
 ## Database (Supabase + Prisma)
 
@@ -96,9 +96,9 @@ CORS is enabled on the API (`apps/api/src/main.ts`). To call the API from the we
 
 ### `make deploy`
 
-Once the platforms are linked, `make deploy` ships both:
+Both platforms are **CLI-deployed** (not git-connected — pushing to `main` does *not* auto-deploy). `make deploy` ships both:
 
-- **API (Railway)** — `git push origin main`; Railway's GitHub integration auto-builds `apps/api` on new commits.
-- **Web (Vercel)** — `cd apps/web && vercel --prod` (needs `vercel login` once; project is CLI-deployed, not git-connected).
+- **API (Railway)** — `railway up` uploads the repo and builds via `/railway.json` (`pnpm --filter @levit/api build`, start `node apps/api/dist/src/main`). Needs `railway login` + `railway link` (project `levit-trust-api`, service `api`, env `production`) once.
+- **Web (Vercel)** — `cd apps/web && vercel --prod` (needs `vercel login` once).
 
 Live: web `https://levit-trust-web.vercel.app` · API `https://api-production-ca14e.up.railway.app`.

@@ -22,3 +22,10 @@
 - **요구사항**: 위 변경을 실제 배포하고 동작 검증 후, 반복 가능한 `make deploy` 한 줄로 만들기.
 - **고민**: 두 플랫폼의 배포 방식이 달랐음 — Vercel(web)은 push에 자동배포가 **안 걸려** 있었고(실측: main 푸시해도 신규 배포 미발생), Railway(api)는 GitHub 연동 자동배포(로컬에 railway CLI/토큰 없음 → 유일 경로). 둘을 한 타겟에 어떻게 정직하게 묶을지.
 - **해결**: `make deploy` = `deploy-api`(`git push origin main` → Railway 자동빌드) + `deploy-web`(`cd apps/web && vercel --prod`). 실제 메커니즘대로 분리. 검증: web `/`·`/check` 200·체커, API `/products`(30개)·`/analyze`(201, KDRIs 판정/설명) 정상, CORS prod origin 허용. Live: web `levit-trust-web.vercel.app`, api `api-production-ca14e.up.railway.app`.
+  - ⚠️ **정정(#04 참고)**: 위 "Railway=git push 자동배포" 가정은 **틀렸음.** API는 `railway up`(CLI)로 배포됨.
+
+## 04. `make deploy-api` 정정 — Railway는 git push가 아니라 `railway up` (2026-05-30)
+
+- **요구사항**: railway CLI 설치·로그인 후, API 배포 메커니즘을 실제로 확인하고 `make deploy-api`를 맞게 고치기.
+- **고민**: #03에서 "로컬에 railway CLI가 없으니 Railway는 GitHub 연동 자동배포일 것"이라 **추정**했는데, 근거가 약했음(오늘 푸시로 API 새 배포가 안 생긴 걸 "apps/api 미변경이라 그렇겠지"로 넘길 수도 있었음).
+- **해결**: railway CLI 설치(`brew install railway`)·로그인·`railway link`(project `levit-trust-api`, service `api`, env `production`) 후 `railway status --json` 확인 → 활성 배포 메타에 `cliMessage: "fix start path..."`(커밋 아님) + `fileServiceManifest`(업로드 매니페스트) → **`railway up` CLI 업로드 배포로 확정**. git 연동 아님. `make deploy-api`를 `railway up --service api`로 교체. README·#03도 정정. 교훈: "CLI 없음 → 자동배포" 추론은 비약, 배포 메타로 검증해야 함.

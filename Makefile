@@ -58,15 +58,15 @@ clean:
 	pnpm -r exec rm -rf node_modules dist .next .turbo
 	rm -rf node_modules
 
-## deploy: production deploy — API (Railway, via git push) + Web (Vercel CLI)
+## deploy: production deploy — API (Railway CLI) + Web (Vercel CLI)
 deploy: deploy-api deploy-web
-	@echo "✅ Deploy triggered. Web: https://levit-trust-web.vercel.app  API: https://api-production-ca14e.up.railway.app"
+	@echo "✅ Deployed. Web: https://levit-trust-web.vercel.app  API: https://api-production-ca14e.up.railway.app"
 
-## deploy-api: deploy the NestJS API — Railway auto-builds on push to main (Root: apps/api)
+## deploy-api: deploy the NestJS API to Railway via CLI (uses /railway.json; needs `railway login` + `railway link`)
 deploy-api:
-	@echo "▶ API (Railway): pushing main — Railway auto-deploys on new commits (Root apps/api, railway.json)"
-	git push origin main
+	@echo "▶ API (Railway): railway up — uploads repo, builds via /railway.json (pnpm --filter @levit/api build)"
+	railway up --service api
 
-## deploy-web: deploy the Next.js web to Vercel production (Root: apps/web; needs `vercel login`)
+## deploy-web: deploy the Next.js web to Vercel production (needs `vercel login`)
 deploy-web:
 	cd apps/web && vercel --prod --yes
