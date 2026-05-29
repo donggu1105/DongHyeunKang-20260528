@@ -7,10 +7,12 @@ type AgeStepProps = {
   // 분석 트리거: 만 나이(년) → 개월 변환은 페이지에서 수행
   onSubmit: (years: number) => void;
   loading: boolean;
+  // 페르소나 프리필: 진입 시 입력란을 미리 채운다 (사용자가 그대로 제출하거나 수정)
+  initialYears?: number | null;
 };
 
-export function AgeStep({ onSubmit, loading }: AgeStepProps) {
-  const [value, setValue] = useState('');
+export function AgeStep({ onSubmit, loading, initialYears }: AgeStepProps) {
+  const [value, setValue] = useState(initialYears == null ? '' : String(initialYears));
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
