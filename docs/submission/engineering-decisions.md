@@ -29,3 +29,9 @@
 - **요구사항**: railway CLI 설치·로그인 후, API 배포 메커니즘을 실제로 확인하고 `make deploy-api`를 맞게 고치기.
 - **고민**: #03에서 "로컬에 railway CLI가 없으니 Railway는 GitHub 연동 자동배포일 것"이라 **추정**했는데, 근거가 약했음(오늘 푸시로 API 새 배포가 안 생긴 걸 "apps/api 미변경이라 그렇겠지"로 넘길 수도 있었음).
 - **해결**: railway CLI 설치(`brew install railway`)·로그인·`railway link`(project `levit-trust-api`, service `api`, env `production`) 후 `railway status --json` 확인 → 활성 배포 메타에 `cliMessage: "fix start path..."`(커밋 아님) + `fileServiceManifest`(업로드 매니페스트) → **`railway up` CLI 업로드 배포로 확정**. git 연동 아님. `make deploy-api`를 `railway up --service api`로 교체. README·#03도 정정. 교훈: "CLI 없음 → 자동배포" 추론은 비약, 배포 메타로 검증해야 함.
+
+## 05. 커머스형 화면 재구성 + 결제 직전 넛지 모달 (2026-05-30)
+
+- **요구사항**: 체커를 실제 커머스(vitaminshop 상품 진열)처럼 — 상품을 이미지·가격과 함께 고르고, 결제 직전 "내 아이한테 지금 맞을까요?" 모달이 **무조건** 떠서 중복·과다를 넛지하는 플로우.
+- **고민**: ① 이미지/가격 데이터가 전부 NULL(타사 자산 사용의 정직성) ② 안전 판정 룰 엔진을 절대 오염시키지 않으면서 가격·이미지를 표시 전용으로 격리 ③ 처음엔 "상황→제품→나이→결과" 스텝퍼로 만들었더니 과제스러워 커머스답지 않았음(사용자 피드백) ④ id 기반 LCG 첫 출력이 seed와 상관도가 높아 전 제품이 같은 이미지로 쏠림(58개 중 distinct 2).
+- **해결**: `Product.listPrice`(정상가) 추가 + `/products`에 imageUrl·price·listPrice 노출(룰 엔진 무변경, 표시 전용). vitaminshop 상품 이미지 30종을 `apps/web/public/products/`로 다운로드(런타임 핫링크 X, 데모 더미 명시) 후 **id 곱셈 해시로 분산 매핑**(LCG 첫 출력 쏠림 회피 → distinct 30). 스텝퍼 폐기 → **목록(전체폭 5열)→장바구니/결제(합계·나이)→결제하기 시 무조건 넛지 모달(분석+검증된 세트 교체 유도)→결제완료(데모)**. `/check`→`/` 리다이렉트로 단일 진입. 검증: API 56 테스트 그린(회귀 0), 전 플로우 시각 확인. 메모: dev 서버가 **IPv6(`localhost`)** 로 바인딩 → `127.0.0.1`로는 클라 런타임/HMR이 깨져 인터랙션 불가, `localhost`로 접속해야 함(CLAUDE.md gotcha 역방향 — 갱신 필요).
