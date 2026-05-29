@@ -10,6 +10,10 @@
       "env": {
         "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
       }
+    },
+    "railway": {
+      "command": "railway",
+      "args": ["mcp"]
     }
   }
 }
