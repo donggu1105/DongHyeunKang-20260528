@@ -190,6 +190,15 @@ export default function CheckPage() {
 
       {step === 2 && (
         <section className="mb-8 rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
+          <button
+            className="mb-3 cursor-pointer font-semibold text-blue-700 text-sm hover:underline"
+            onClick={() => {
+              setStep(1);
+            }}
+            type="button"
+          >
+            ← 제품 다시 담기
+          </button>
           <p className="mb-3 text-gray-600 text-sm">
             담은 제품 <strong>{cart.length}개</strong>:{' '}
             {cartProducts.map((p) => p.name).join(', ')}
@@ -199,6 +208,14 @@ export default function CheckPage() {
             loading={analyzing}
             onSubmit={runAnalyze}
           />
+          {analyzeError && (
+            <p
+              className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700 text-sm"
+              role="alert"
+            >
+              {analyzeError}
+            </p>
+          )}
         </section>
       )}
 
