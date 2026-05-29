@@ -2,14 +2,20 @@
 
 import Image from 'next/image';
 import type { CatalogProduct } from '@/libs/Api';
-import { discountPercent, formatKRW } from './format';
+import { discountPercent, formatKRW, getMfdsInfo } from './format';
+import { MfdsSeal } from './MfdsSeal';
 
 type Props = { product: CatalogProduct; selected: boolean; onToggle: (id: number) => void };
 
 export function ProductCard({ product, selected, onToggle }: Props) {
-  const list = formatKRW(product.listPrice);
   const sale = formatKRW(product.price);
+  const list = formatKRW(product.listPrice);
   const off = discountPercent(product.listPrice, product.price);
+  const mfds = getMfdsInfo(product.sourceUrl);
+  // 카드의 본문은 가격이 아니라 "어떤 영양소가 얼마나 들었나" — 페르소나가 중복·과다를
+  // 걱정하는 그 정보다. 상위 3종만 보이고 나머지는 개수로 접는다.
+  const keyIngredients = product.ingredients.slice(0, 3);
+  const moreCount = product.ingredients.length - keyIngredients.length;
 
   return (
     <button
@@ -18,13 +24,14 @@ export function ProductCard({ product, selected, onToggle }: Props) {
         onToggle(product.id);
       }}
       aria-pressed={selected}
-      className={`group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border text-left transition duration-200 ${
+      className={`group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl border text-left transition duration-200 ${
         selected
           ? 'border-blue-500 ring-2 ring-blue-200'
           : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
       }`}
     >
       <div className="relative aspect-square w-full bg-gradient-to-br from-blue-50 to-indigo-50">
+        {mfds && <MfdsSeal statementNo={mfds.statementNo} />}
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
@@ -61,28 +68,50 @@ export function ProductCard({ product, selected, onToggle }: Props) {
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4">
         <p className="line-clamp-2 min-h-[2.5rem] font-semibold text-gray-900">{product.name}</p>
-        {list && off !== null && <p className="text-sm text-gray-400 line-through">{list}</p>}
-        <p className="flex flex-wrap items-baseline gap-x-2">
-          {sale && (
-            <span className="whitespace-nowrap font-bold text-gray-900 text-lg">{sale}</span>
+        {keyIngredients.length > 0 && (
+          <ul className="min-h-[4.5rem] space-y-0.5 text-sm">
+            {keyIngredients.map((ing) => (
+              <li className="flex items-baseline justify-between gap-2" key={ing.name}>
+                <span className="truncate text-gray-500">{ing.name}</span>
+                <span className="shrink-0 font-medium text-gray-800">
+                  {ing.amount}
+                  {ing.unit}
+                </span>
+              </li>
+            ))}
+            {moreCount > 0 && (
+              <li className="text-right text-xs text-gray-400">외 {moreCount}종</li>
+            )}
+          </ul>
+        )}
+        <div className="mt-auto pt-2">
+          {/* 가격 — 커머스형 할인 표시 */}
+          {list && off !== null && (
+            <p className="text-gray-400 text-xs line-through">{list}</p>
           )}
-          {off !== null && (
-            <span className="whitespace-nowrap font-bold text-red-600 text-sm">{off}%</span>
-          )}
-        </p>
-        <div className="mt-1 flex flex-wrap gap-1 text-xs text-gray-500">
-          {product.form && <span className="rounded bg-gray-100 px-2 py-0.5">{product.form}</span>}
-          {product.targetAgeLabel && (
-            <span className="rounded bg-gray-100 px-2 py-0.5">{product.targetAgeLabel}</span>
-          )}
+          <p className="flex items-baseline gap-1.5">
+            {sale && <span className="whitespace-nowrap font-bold text-base text-gray-900">{sale}</span>}
+            {off !== null && (
+              <span className="whitespace-nowrap font-bold text-red-500 text-sm">{off}%</span>
+            )}
+          </p>
+          {/* 제형 / 연령 */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1 text-gray-500 text-xs">
+            {product.form && (
+              <span className="rounded bg-gray-100 px-2 py-0.5">{product.form}</span>
+            )}
+            {product.targetAgeLabel && (
+              <span className="rounded bg-gray-100 px-2 py-0.5">{product.targetAgeLabel}</span>
+            )}
+          </div>
+          <span
+            className={`mt-2 inline-flex w-fit rounded-md px-2 py-1 font-medium text-sm ${
+              selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            {selected ? '✓ 담음' : '담기'}
+          </span>
         </div>
-        <span
-          className={`mt-2 inline-flex w-fit rounded-md px-2 py-1 text-sm font-medium ${
-            selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
-          }`}
-        >
-          {selected ? '✓ 담음' : '담기'}
-        </span>
       </div>
     </button>
   );

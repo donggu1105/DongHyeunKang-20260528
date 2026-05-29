@@ -12,3 +12,12 @@ export function discountPercent(listPrice: number | null, price: number | null):
   }
   return Math.round(((listPrice - price) / listPrice) * 100);
 }
+
+// 식약처 크롤 제품은 sourceUrl이 "식약처 … 신고번호 N" 형식.
+// 식약처 출처가 아니면 null, 맞으면 신고번호(없으면 null)를 담아 반환한다.
+export function getMfdsInfo(sourceUrl: string | null): { statementNo: string | null } | null {
+  if (!sourceUrl?.startsWith('식약처')) {
+    return null;
+  }
+  return { statementNo: sourceUrl.match(/신고번호\s*(\S+)/u)?.[1] ?? null };
+}
