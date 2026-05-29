@@ -8,6 +8,9 @@ export type CatalogProduct = {
   form: string | null;
   targetAgeLabel: string | null;
   sourceUrl: string | null;
+  imageUrl: string | null;
+  price: number | null;
+  listPrice: number | null;
   ingredients: { name: string; amount: number; unit: string }[];
 };
 
@@ -28,6 +31,9 @@ export class ProductsService {
       form: p.form ?? null,
       targetAgeLabel: p.targetAgeLabel ?? null,
       sourceUrl: p.sourceUrl ?? null,
+      imageUrl: p.imageUrl ?? null,
+      price: p.price ?? null,
+      listPrice: p.listPrice ?? null,
       // Decimal→number 변환은 서비스 경계에서 끝낸다 — Prisma Decimal을 클라이언트로 누출시키지 않는다.
       ingredients: p.ingredients.map((pi) => ({
         name: pi.ingredient.name,
