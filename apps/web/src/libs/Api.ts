@@ -21,6 +21,9 @@ export type CatalogProduct = {
   form: string | null;
   targetAgeLabel: string | null;
   sourceUrl: string | null;
+  imageUrl: string | null;
+  price: number | null;
+  listPrice: number | null;
   ingredients: CatalogIngredient[];
 };
 
