@@ -1,244 +1,389 @@
 'use client';
 
-// MVP: 하드코딩된 한국어 문자열 (i18n 메시지 카탈로그 미사용 — 데모용 단순화).
-// PUBLIC 페이지: (checker) 라우트 그룹에는 ClerkProvider가 없어 로그인 없이 접근 가능.
+// MVP: 하드코딩된 한국어 문자열. PUBLIC 페이지(로그인 없음).
+// 커머스 플로우: 상품 목록 → 결제 페이지(나이·합계) → 결제 직전 넛지 모달 → 완료.
 import { useEffect, useState } from 'react';
-import { AgeStep } from '@/components/checker/AgeStep';
-import { PersonaLanding } from '@/components/checker/PersonaLanding';
-import type { PersonaScenario } from '@/components/checker/personaScenarios';
+import { formatKRW } from '@/components/checker/format';
+import { NudgeModal } from '@/components/checker/NudgeModal';
+import { PERSONA_SCENARIOS } from '@/components/checker/personaScenarios';
+import type { PersonaId, PersonaScenario } from '@/components/checker/personaScenarios';
 import { ProductPicker } from '@/components/checker/ProductPicker';
-import { RecommendedSetCard } from '@/components/checker/RecommendedSetCard';
-import { ReportCard } from '@/components/checker/ReportCard';
-import type { AnalyzeResponse, CatalogProduct } from '@/libs/Api';
-import { analyze, ApiError, getProducts } from '@/libs/Api';
+import { SetSection } from '@/components/checker/SetSection';
+import type { CatalogProduct } from '@/libs/Api';
+import { getProducts } from '@/libs/Api';
+
+type View = 'shop' | 'checkout' | 'done';
+type AgeBand = 'all' | 'infant' | 'preschool' | 'school';
+
+// targetAgeLabel("N세 이상"/"전연령"/null) → 최소 권장 연령(세). 모르면 0.
+const AGE_LABEL_RE = /(\d+)\s*세/u;
+const minAgeOf = (label: string | null): number => {
+  if (!label || label.includes('전연령')) {
+    return 0;
+  }
+  const m = label.match(AGE_LABEL_RE);
+  return m ? Number(m[1]) : 0;
+};
+const AGE_BANDS = [
+  { key: 'all', label: '전체', max: 99 },
+  { key: 'infant', label: '영·유아', max: 2 },
+  { key: 'preschool', label: '3~6세', max: 6 },
+  { key: 'school', label: '7세+', max: 99 },
+] as const;
+
+// 연령 밴드 + 필터 결과를 컴포넌트 밖에서 도출 (CheckPage 복잡도 절감).
+const deriveBand = (ageBand: AgeBand, products: CatalogProduct[]) => {
+  const active = AGE_BANDS.find((b) => b.key === ageBand);
+  const bandMax = active?.max ?? 99;
+  // "이 연령 아이에게 적합" = 제품 최소권장연령 ≤ 밴드 상한
+  const filteredProducts =
+    ageBand === 'all' ? products : products.filter((p) => minAgeOf(p.targetAgeLabel) <= bandMax);
+  return { bandLabel: active?.label ?? '전체', filteredProducts };
+};
 
 export default function CheckPage() {
-  // 진입 상태: 페르소나 랜딩 ↔ 체커. 랜딩은 기존 체커 위에 얹은 데모 레이어다.
-  const [entry, setEntry] = useState<'landing' | 'checker'>('landing');
-  const [persona, setPersona] = useState<PersonaScenario | null>(null);
-
+  const [view, setView] = useState<View>('shop');
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading');
-
   const [cart, setCart] = useState<number[]>([]);
-  const [ageYears, setAgeYears] = useState<number | null>(null);
-
-  const [report, setReport] = useState<AnalyzeResponse | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
-
-  // "추가하기" (선택 단계) 패널 노출 여부
-  const [showAddMore, setShowAddMore] = useState(false);
+  // 페르소나 prefill 캐시: 나이 입력은 NudgeModal STEP1으로 이동했고, 여기선 페르소나 선택 시
+  // 미리 채워 모달의 initialAgeYears로만 전달한다(체크아웃에 입력칸 없음).
+  const [ageInput, setAgeInput] = useState('');
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [ageBand, setAgeBand] = useState<AgeBand>('all');
+  const [visibleCount, setVisibleCount] = useState(8);
+  const [selectedPersonaId, setSelectedPersonaId] = useState<PersonaId | null>(null);
 
   useEffect(() => {
     let active = true;
-    getProducts()
-      .then((data) => {
+    const load = async () => {
+      try {
+        const data = await getProducts();
         if (active) {
           setProducts(data);
           setCatalogState('ready');
         }
-      })
-      .catch(() => {
+      } catch {
         if (active) {
           setCatalogState('error');
         }
-      });
+      }
+    };
+    void load();
     return () => {
       active = false;
     };
   }, []);
 
-  // 페르소나 선택 → 나이·장바구니 프리필 후 체커로 진입.
-  // 프리셋은 제품 "이름"으로 지정 — 카탈로그에서 id로 해석하고, 없는 이름은 건너뛰고 경고한다.
-  const handlePersonaSelect = (scenario: PersonaScenario) => {
-    const ids: number[] = [];
-    for (const name of scenario.productNames) {
-      const found = products.find((p) => p.name === name);
-      if (found) {
-        ids.push(found.id);
-      } else {
-        console.warn(`[persona] 카탈로그에 없는 제품이라 건너뜁니다: ${name}`);
-      }
-    }
-    setPersona(scenario);
-    setCart(ids);
-    setReport(null);
-    setAnalyzeError(null);
-    setShowAddMore(false);
-    setEntry('checker');
-  };
+  const cartProducts = products.filter((p) => cart.includes(p.id));
+  const total = cartProducts.reduce((sum, p) => sum + (p.price ?? 0), 0);
 
-  // 랜딩으로 복귀 — 상태 초기화
-  const backToLanding = () => {
-    setEntry('landing');
-    setPersona(null);
-    setCart([]);
-    setAgeYears(null);
-    setReport(null);
-    setAnalyzeError(null);
-    setShowAddMore(false);
+  const { bandLabel, filteredProducts } = deriveBand(ageBand, products);
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const selectBand = (key: AgeBand) => {
+    setAgeBand(key);
+    setVisibleCount(8);
   };
 
   const toggleCart = (id: number) => {
     setCart((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    // 카트가 바뀌면 이전 결과는 무효 — 재분석 유도
-    setReport(null);
-    setAnalyzeError(null);
+  };
+  const removeFromCart = (id: number) => {
+    setCart((prev) => prev.filter((x) => x !== id));
   };
 
-  const runAnalyze = async (years: number) => {
-    setAgeYears(years);
-    setAnalyzing(true);
-    setAnalyzeError(null);
-    try {
-      const result = await analyze({
-        ageMonths: Math.round(years * 12),
-        productIds: cart,
-      });
-      setReport(result);
-    } catch (err) {
-      setAnalyzeError(
-        err instanceof ApiError ? err.message : '분석 중 오류가 발생했습니다. 다시 시도해 주세요.',
-      );
-    } finally {
-      setAnalyzing(false);
+  // 추천 세트 빠른 담기 (페르소나 프리셋: 이름→id)
+  const addSet = (s: PersonaScenario) => {
+    const ids = s.productNames
+      .map((n) => products.find((p) => p.name === n)?.id)
+      .filter((x): x is number => x !== undefined);
+    setCart((prev) => [...new Set([...prev, ...ids])]);
+    if (s.ageYears !== null) {
+      setAgeInput(String(s.ageYears));
     }
   };
 
-  // "추가하기" 후 재분석 (이미 나이를 알고 있으므로 입력 없이 바로)
-  const reAnalyze = () => {
-    if (ageYears !== null) {
-      runAnalyze(ageYears);
+  // 페르소나 선택 — 나이 프리필 + 해당 세트 섹션으로 스크롤·강조 (제품 자동 담기는 안 함)
+  const selectPersona = (s: PersonaScenario) => {
+    setSelectedPersonaId(s.id);
+    if (s.ageYears !== null) {
+      setAgeInput(String(s.ageYears));
     }
+    // 클라이언트 핸들러 — 해당 세트 섹션으로 스크롤
+    setTimeout(() => {
+      document
+        .querySelector(`#set-${s.id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   };
 
-  const cartProducts = products.filter((p) => cart.includes(p.id));
+  // 페르소나 prefill을 모달 초기 나이로만 환산 (실제 나이 확인/검증은 NudgeModal STEP1에서)
+  const ageYears = ageInput.trim() === '' ? null : Number(ageInput);
+  const ageValid = ageYears !== null && !Number.isNaN(ageYears) && ageYears >= 0 && ageYears <= 18;
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 text-gray-800">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">우리 아이 영양제 안전 체크</h1>
-        <p className="mt-2 text-base text-gray-600">
-          먹이는 영양제를 담고 아이 나이만 입력하면, 중복·과다 섭취 위험을 근거와 함께 확인해
-          드려요. 5분이면 충분합니다.
-        </p>
+    <main className="mx-auto max-w-7xl px-4 py-8 pb-12 text-gray-800">
+      <header className="mb-6 flex items-center justify-between gap-3">
+        <button
+          className="cursor-pointer text-left"
+          onClick={() => {
+            setView('shop');
+          }}
+          type="button"
+        >
+          <h1 className="text-2xl font-bold text-gray-900">levit - 아이 영양제</h1>
+          <p className="text-sm text-gray-500">담고 결제 전에 안전까지 확인해 드려요</p>
+        </button>
       </header>
 
-      {entry === 'landing' ? (
-        <PersonaLanding onSelect={handlePersonaSelect} />
-      ) : (
+      {view === 'shop' && (
         <>
-          {/* 맥락 배너: 어떤 상황으로 들어왔는지 + 랜딩으로 복귀 */}
-          <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-            <p className="text-sm text-gray-700">
-              {persona && persona.id !== 'manual' ? (
-                <>
-                  <span aria-hidden="true">{persona.emoji}</span>{' '}
-                  <strong className="font-semibold text-gray-900">{persona.title}</strong>
-                  {persona.ageYears !== null && ` · 만 ${persona.ageYears}세 예시로 담았어요`}
-                </>
-              ) : (
-                '직접 담아 확인하기'
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={backToLanding}
-              className="shrink-0 cursor-pointer text-sm font-semibold text-blue-700 hover:underline"
-            >
-              상황 다시 고르기
-            </button>
-          </div>
-
-          {/* 1) 카탈로그 */}
-          <section className="mb-8">
-            <h2 className="mb-3 text-xl font-semibold text-gray-900">
-              1. 먹이는 영양제를 담아주세요
-            </h2>
-
-            {catalogState === 'loading' && (
-              <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
-                제품을 불러오는 중…
-              </p>
-            )}
-
-            {catalogState === 'error' && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                <p className="font-semibold">제품 목록을 불러오지 못했습니다.</p>
-                <p className="mt-1 text-red-600">
-                  API 서버가 실행 중인지 확인해 주세요 (로컬: http://localhost:3001).
-                </p>
-              </div>
-            )}
-
-            {catalogState === 'ready' && (
-              <ProductPicker products={products} selectedIds={cart} onToggle={toggleCart} />
-            )}
-          </section>
-
-          {/* 2) 트리거: 카트에 1개 이상 담기면 나이 입력 노출 */}
-          {cart.length > 0 && (
-            <section className="mb-8 rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
-              <p className="mb-3 text-sm text-gray-600">
-                담은 제품 <strong>{cart.length}개</strong>:{' '}
-                {cartProducts.map((p) => p.name).join(', ')}
-              </p>
-              <AgeStep
-                onSubmit={runAnalyze}
-                loading={analyzing}
-                initialYears={persona?.ageYears ?? null}
-              />
-            </section>
+          {catalogState === 'loading' && (
+            <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">제품을 불러오는 중…</p>
           )}
-
-          {/* 분석 에러 */}
-          {analyzeError && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {analyzeError}
+          {catalogState === 'error' && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <p className="font-semibold">제품 목록을 불러오지 못했습니다.</p>
+              <p className="mt-1 text-red-600">API 서버 확인 (로컬: http://localhost:3001).</p>
             </div>
           )}
-
-          {/* 3) 리포트 */}
-          {report && ageYears !== null && (
-            <section className="mb-8">
-              <h2 className="mb-3 text-xl font-semibold text-gray-900">분석 결과</h2>
-
-              <RecommendedSetCard report={report} ageYears={ageYears} />
-              <div className="mt-4">
-                <ReportCard report={report} />
-              </div>
-
-              {/* 선택 단계 (차별점): 다른 영양제 추가 → 재분석 */}
-              <div className="mt-6 rounded-2xl border border-dashed border-gray-300 bg-white p-5">
-                {showAddMore ? (
-                  <>
-                    <h3 className="mb-3 text-base font-semibold text-gray-900">
-                      추가로 먹는 영양제를 담아주세요
-                    </h3>
-                    <ProductPicker products={products} selectedIds={cart} onToggle={toggleCart} />
+          {catalogState === 'ready' && (
+            <>
+              {/* 1) 페르소나 요약 — 고르면 나이 프리필 + 해당 세트로 스크롤·강조 */}
+              <section className="mb-6">
+                <h2 className="mb-1 text-sm font-semibold text-gray-900">
+                  어떤 상황에 가까우세요?
+                </h2>
+                <p className="mb-3 text-xs text-gray-500">
+                  고르면 맞춤 세트로 안내하고 나이를 미리 채워 드려요.
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
                     <button
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-3 text-left transition hover:border-blue-300"
+                      key={s.id}
+                      onClick={() => {
+                        selectPersona(s);
+                      }}
                       type="button"
-                      onClick={reAnalyze}
-                      disabled={analyzing}
-                      className="mt-4 rounded-lg bg-blue-600 px-5 py-2 text-base font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
                     >
-                      {analyzing ? '다시 분석 중…' : '추가해서 다시 확인하기'}
+                      <span aria-hidden="true" className="text-2xl">
+                        {s.emoji}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-gray-900">{s.title}</span>
+                        <span className="block truncate text-xs text-gray-500">{s.pain}</span>
+                      </span>
                     </button>
-                  </>
+                  ))}
+                </div>
+              </section>
+
+              {/* 2) 전체 상품 — 연령 탭 필터 + 일부만 + 더보기 */}
+              <section className="mb-10">
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 className="text-lg font-bold text-gray-900">
+                    전체 상품{' '}
+                    <span className="text-sm font-medium text-gray-400">· {bandLabel}</span>
+                  </h2>
+                  <div aria-label="연령별 보기" className="flex flex-wrap gap-1.5" role="tablist">
+                    {AGE_BANDS.map((b) => (
+                      <button
+                        aria-selected={ageBand === b.key}
+                        className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium transition ${
+                          ageBand === b.key
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        key={b.key}
+                        onClick={() => {
+                          selectBand(b.key);
+                        }}
+                        role="tab"
+                        type="button"
+                      >
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {filteredProducts.length === 0 ? (
+                  <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
+                    이 연령대 제품이 없어요.
+                  </p>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddMore(true)}
-                    className="text-base font-semibold text-blue-700 hover:underline"
-                  >
-                    ➕ 다른 영양제도 먹고 있나요? 추가하기
-                  </button>
+                  <>
+                    <ProductPicker
+                      onToggle={toggleCart}
+                      products={visibleProducts}
+                      selectedIds={cart}
+                    />
+                    {filteredProducts.length > visibleCount && (
+                      <div className="mt-5 text-center">
+                        <button
+                          className="cursor-pointer rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                          onClick={() => {
+                            setVisibleCount((c) => c + 8);
+                          }}
+                          type="button"
+                        >
+                          더보기 ({visibleCount}/{filteredProducts.length})
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
+              </section>
+
+              {/* 3) 세트 컬렉션 섹션들 — 아래에서 훑어보기 */}
+              <div className="flex flex-col gap-10">
+                <h2 className="text-lg font-bold text-gray-900">상황별 추천 세트</h2>
+                {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
+                  <SetSection
+                    cart={cart}
+                    highlighted={selectedPersonaId === s.id}
+                    key={s.id}
+                    onAddSet={addSet}
+                    onToggle={toggleCart}
+                    products={products}
+                    scenario={s}
+                  />
+                ))}
               </div>
-            </section>
+            </>
           )}
         </>
+      )}
+
+      {view === 'checkout' && (
+        <div className="mx-auto max-w-2xl">
+          <button
+            className="mb-4 cursor-pointer text-sm font-semibold text-blue-700 hover:underline"
+            onClick={() => {
+              setView('shop');
+            }}
+            type="button"
+          >
+            ← 계속 쇼핑하기
+          </button>
+          <h2 className="mb-4 text-xl font-bold text-gray-900">장바구니 · 결제</h2>
+
+          {cart.length === 0 ? (
+            <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">담은 제품이 없어요.</p>
+          ) : (
+            <>
+              <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
+                {cartProducts.map((p) => (
+                  <li className="flex items-center gap-3 p-3" key={p.id}>
+                    <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-gray-50">
+                      {/* 작은 썸네일 (일반 img로 충분) */}
+                      {p.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img alt={p.name} className="size-full object-contain" src={p.imageUrl} />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900">{p.name}</p>
+                      <p className="text-sm text-gray-500">{formatKRW(p.price)}</p>
+                    </div>
+                    <button
+                      className="shrink-0 cursor-pointer text-sm text-gray-400 hover:text-red-600"
+                      onClick={() => {
+                        removeFromCart(p.id);
+                      }}
+                      type="button"
+                    >
+                      삭제
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-4 flex items-center justify-between text-lg font-bold text-gray-900">
+                <span>합계</span>
+                <span>{formatKRW(total)}</span>
+              </div>
+
+              <button
+                className="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-5 py-3 text-lg font-bold text-white transition hover:bg-blue-700"
+                onClick={() => {
+                  setNudgeOpen(true);
+                }}
+                type="button"
+              >
+                {formatKRW(total)} 결제하기
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {view === 'done' && (
+        <div className="mx-auto max-w-md py-16 text-center">
+          <p className="text-5xl">🎉</p>
+          <h2 className="mt-4 text-2xl font-bold text-gray-900">결제 완료 (데모)</h2>
+          <p className="mt-2 text-gray-600">
+            안전 확인까지 마친 주문이에요. 실제 결제는 일어나지 않습니다.
+          </p>
+          <button
+            className="mt-6 cursor-pointer rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white transition hover:bg-blue-700"
+            onClick={() => {
+              setCart([]);
+              setAgeInput('');
+              setView('shop');
+            }}
+            type="button"
+          >
+            처음으로
+          </button>
+        </div>
+      )}
+
+      {nudgeOpen && (
+        <NudgeModal
+          initialAgeYears={ageValid ? ageYears : null}
+          onAdjust={() => {
+            setNudgeOpen(false);
+            setView('shop');
+          }}
+          onClose={() => {
+            setNudgeOpen(false);
+          }}
+          onConfirmPay={() => {
+            setNudgeOpen(false);
+            setView('done');
+          }}
+          productIds={cart}
+        />
+      )}
+
+      {view === 'shop' && cart.length > 0 && (
+        <button
+          aria-label={`장바구니 ${cart.length}개 — 결제로`}
+          className="fixed right-5 bottom-5 z-30 flex size-14 cursor-pointer items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition hover:bg-blue-700"
+          onClick={() => {
+            setView('checkout');
+          }}
+          type="button"
+        >
+          <svg
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12A1.125 1.125 0 0119.748 21H4.252a1.125 1.125 0 01-1.121-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold">
+            {cart.length}
+          </span>
+        </button>
       )}
     </main>
   );

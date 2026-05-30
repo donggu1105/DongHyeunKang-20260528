@@ -55,7 +55,8 @@ model Product {
   brand          String?
   form           String? // 구미 / 정제 / 분말 ...
   targetAgeLabel String? // raw "대상연령" text from the label
-  price          Int? // KRW
+  price          Int? // KRW (판매가)
+  listPrice      Int? // KRW 정상가(취소선용). 데모 더미 — 판정과 무관
   sourceUrl      String? // where the label data was crawled from
   imageUrl       String?
   ingredients    ProductIngredient[]

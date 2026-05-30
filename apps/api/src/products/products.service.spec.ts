@@ -25,7 +25,8 @@ describe('ProductsService', () => {
         brand: '브랜드',
         form: '정',
         targetAgeLabel: '7세 이상',
-        price: '12000',
+        price: 12000,
+        listPrice: 20000,
         sourceUrl: 'http://x',
         imageUrl: 'http://img',
         ingredients: [
@@ -44,6 +45,9 @@ describe('ProductsService', () => {
         form: '정',
         targetAgeLabel: '7세 이상',
         sourceUrl: 'http://x',
+        imageUrl: 'http://img',
+        price: 12000,
+        listPrice: 20000,
         ingredients: [{ name: '비타민D', amount: 10, unit: '㎍' }],
       },
     ]);
