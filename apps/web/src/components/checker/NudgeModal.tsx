@@ -67,8 +67,11 @@ export function NudgeModal({ ageYears, productIds, onClose, onAdjust, onConfirmP
             내 아이한테 지금 맞을까요?
           </h2>
           <p className="mt-1 text-sm text-gray-600">
-            결제 전, <strong>만 {ageYears}세 · 담은 {productIds.length}개 제품</strong> 기준으로
-            KDRIs 상한 대비 중복·과다를 확인해 드려요.
+            결제 전,{' '}
+            <strong>
+              만 {ageYears}세 · 담은 {productIds.length}개 제품
+            </strong>{' '}
+            기준으로 KDRIs 상한 대비 중복·과다를 확인해 드려요.
           </p>
         </div>
 
@@ -115,7 +118,7 @@ export function NudgeModal({ ageYears, productIds, onClose, onAdjust, onConfirmP
               )}
 
               <RecommendedSetCard ageYears={ageYears} report={report} />
-              <ReportCard report={report} />
+              <ReportCard ageMonths={Math.round(ageYears * 12)} report={report} />
             </div>
           )}
         </div>

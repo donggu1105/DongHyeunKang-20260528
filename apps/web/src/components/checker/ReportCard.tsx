@@ -2,37 +2,36 @@
 
 // MVP: 하드코딩된 한국어 문자열 (i18n 메시지 카탈로그 미사용 — 데모용 단순화)
 import type { AnalyzeResponse, NutrientResult, Verdict } from '@/libs/Api';
+import { NutrientInfo } from './NutrientInfo';
 
 // 색상은 단독 신호가 아니다 — 라벨 + 이모지 + 텍스트를 함께 제공해 접근성을 확보한다.
-const VERDICT_STYLE: Record<
-  Verdict,
-  { label: string; icon: string; card: string; badge: string }
-> = {
-  SAFE: {
-    label: '안전',
-    icon: '🟢',
-    card: 'border-green-300 bg-green-50',
-    badge: 'bg-green-600 text-white',
-  },
-  DUPLICATE: {
-    label: '중복 · 범위내',
-    icon: '🟡',
-    card: 'border-amber-300 bg-amber-50',
-    badge: 'bg-amber-500 text-white',
-  },
-  OVER: {
-    label: '과다',
-    icon: '🔴',
-    card: 'border-red-300 bg-red-50',
-    badge: 'bg-red-600 text-white',
-  },
-  UNKNOWN: {
-    label: '확인불가',
-    icon: '⚪',
-    card: 'border-gray-300 bg-gray-50',
-    badge: 'bg-gray-500 text-white',
-  },
-};
+const VERDICT_STYLE: Record<Verdict, { label: string; icon: string; card: string; badge: string }> =
+  {
+    SAFE: {
+      label: '안전',
+      icon: '🟢',
+      card: 'border-green-300 bg-green-50',
+      badge: 'bg-green-600 text-white',
+    },
+    DUPLICATE: {
+      label: '중복 · 범위내',
+      icon: '🟡',
+      card: 'border-amber-300 bg-amber-50',
+      badge: 'bg-amber-500 text-white',
+    },
+    OVER: {
+      label: '과다',
+      icon: '🔴',
+      card: 'border-red-300 bg-red-50',
+      badge: 'bg-red-600 text-white',
+    },
+    UNKNOWN: {
+      label: '확인불가',
+      icon: '⚪',
+      card: 'border-gray-300 bg-gray-50',
+      badge: 'bg-gray-500 text-white',
+    },
+  };
 
 function formatAmount(value: number | null, unit: string): string | null {
   if (value === null) {
@@ -43,7 +42,13 @@ function formatAmount(value: number | null, unit: string): string | null {
   return `${rounded}${unit}`;
 }
 
-function NutrientCard({ nutrient }: { nutrient: NutrientResult }) {
+function NutrientCard({
+  nutrient,
+  ageMonths,
+}: {
+  nutrient: NutrientResult;
+  ageMonths: number | null;
+}) {
   const style = VERDICT_STYLE[nutrient.verdict];
   const total = formatAmount(nutrient.totalCanonical, nutrient.unit);
   const upper = formatAmount(nutrient.upperLimit, nutrient.unit);
@@ -52,7 +57,11 @@ function NutrientCard({ nutrient }: { nutrient: NutrientResult }) {
     <div className={`rounded-xl border p-4 ${style.card}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-lg font-semibold text-gray-900">{nutrient.ingredientName}</p>
+          <p className="text-lg font-semibold text-gray-900">
+            <NutrientInfo ageMonths={ageMonths} ingredientName={nutrient.ingredientName}>
+              {nutrient.ingredientName}
+            </NutrientInfo>
+          </p>
           {total && (
             <p className="text-2xl font-bold text-gray-900">
               {total}
@@ -64,9 +73,7 @@ function NutrientCard({ nutrient }: { nutrient: NutrientResult }) {
             </p>
           )}
         </div>
-        <span
-          className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${style.badge}`}
-        >
+        <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${style.badge}`}>
           {style.icon} {style.label}
         </span>
       </div>
@@ -109,12 +116,18 @@ function NutrientCard({ nutrient }: { nutrient: NutrientResult }) {
   );
 }
 
-export function ReportCard({ report }: { report: AnalyzeResponse }) {
+export function ReportCard({
+  report,
+  ageMonths,
+}: {
+  report: AnalyzeResponse;
+  ageMonths: number | null;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3">
         {report.byNutrient.map((nutrient) => (
-          <NutrientCard key={nutrient.ingredientId} nutrient={nutrient} />
+          <NutrientCard ageMonths={ageMonths} key={nutrient.ingredientId} nutrient={nutrient} />
         ))}
       </div>
 
