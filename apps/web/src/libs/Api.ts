@@ -27,6 +27,26 @@ export type CatalogProduct = {
   ingredients: CatalogIngredient[];
 };
 
+// ── Ingredient reference (GET /ingredients) ───────────────────────────────
+export type IngredientReference = {
+  ageMinMonths: number;
+  ageMaxMonths: number;
+  ageLabel: string;
+  recommended: number | null;
+  upperLimit: number | null;
+  unit: string;
+};
+
+export type IngredientInfo = {
+  id: number;
+  name: string;
+  canonicalUnit: string;
+  isFatSoluble: boolean;
+  references: IngredientReference[];
+  source: string;
+  sourceUrl: string | null;
+};
+
 // ── Analysis (POST /analyze) ──────────────────────────────────────────────
 export type Verdict = 'SAFE' | 'DUPLICATE' | 'OVER' | 'UNKNOWN';
 
@@ -95,6 +115,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getProducts(): Promise<CatalogProduct[]> {
   return request<CatalogProduct[]>('/products');
+}
+
+export function getIngredients(): Promise<IngredientInfo[]> {
+  return request<IngredientInfo[]>('/ingredients');
 }
 
 export function analyze(payload: AnalyzeRequest): Promise<AnalyzeResponse> {
