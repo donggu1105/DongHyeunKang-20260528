@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { formatKRW } from '@/components/checker/format';
 import { NudgeModal } from '@/components/checker/NudgeModal';
 import { PERSONA_SCENARIOS } from '@/components/checker/personaScenarios';
-import type { PersonaScenario } from '@/components/checker/personaScenarios';
+import type { PersonaId, PersonaScenario } from '@/components/checker/personaScenarios';
 import { ProductPicker } from '@/components/checker/ProductPicker';
 import { SetSection } from '@/components/checker/SetSection';
 import type { CatalogProduct } from '@/libs/Api';
@@ -50,6 +50,7 @@ export default function CheckPage() {
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [ageBand, setAgeBand] = useState<AgeBand>('all');
   const [visibleCount, setVisibleCount] = useState(8);
+  const [selectedPersonaId, setSelectedPersonaId] = useState<PersonaId | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -102,6 +103,7 @@ export default function CheckPage() {
 
   // 페르소나 선택 — 나이 프리필 + 해당 세트 섹션으로 스크롤·강조 (제품 자동 담기는 안 함)
   const selectPersona = (s: PersonaScenario) => {
+    setSelectedPersonaId(s.id);
     if (s.ageYears !== null) {
       setAgeInput(String(s.ageYears));
     }
