@@ -48,7 +48,6 @@ export default function CheckPage() {
   const [cart, setCart] = useState<number[]>([]);
   const [ageInput, setAgeInput] = useState('');
   const [nudgeOpen, setNudgeOpen] = useState(false);
-  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
   const [ageBand, setAgeBand] = useState<AgeBand>('all');
   const [visibleCount, setVisibleCount] = useState(8);
 
@@ -103,7 +102,6 @@ export default function CheckPage() {
 
   // 페르소나 선택 — 나이 프리필 + 해당 세트 섹션으로 스크롤·강조 (제품 자동 담기는 안 함)
   const selectPersona = (s: PersonaScenario) => {
-    setSelectedPersonaId(s.id);
     if (s.ageYears !== null) {
       setAgeInput(String(s.ageYears));
     }
@@ -157,11 +155,7 @@ export default function CheckPage() {
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
                     <button
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition ${
-                        selectedPersonaId === s.id
-                          ? 'border-blue-400 bg-blue-50/60'
-                          : 'border-gray-200 hover:border-blue-300'
-                      }`}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-3 text-left transition hover:border-blue-300"
                       key={s.id}
                       onClick={() => {
                         selectPersona(s);

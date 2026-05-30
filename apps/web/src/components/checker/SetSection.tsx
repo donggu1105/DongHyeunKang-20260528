@@ -31,8 +31,10 @@ export function SetSection({ scenario, products, cart, onToggle, onAddSet, highl
       id={`set-${scenario.id}`}
     >
       <div className="mb-3 flex items-baseline justify-between gap-2">
+        {/* 제목은 엄마 관점 설득 헤드라인(headline) 우선, 없으면 상품 라벨(setName) */}
         <h2 className="font-bold text-gray-900 text-lg">
-          <span aria-hidden="true">{scenario.emoji}</span> {scenario.setName}
+          <span aria-hidden="true">{scenario.emoji}</span>{' '}
+          {scenario.headline ?? scenario.setName}
         </h2>
         {scenario.ageYears !== null && (
           <span className="shrink-0 text-gray-500 text-sm">만 {scenario.ageYears}세 추천</span>
