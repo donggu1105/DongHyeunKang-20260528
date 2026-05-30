@@ -117,8 +117,6 @@ export default function CheckPage() {
 
   const ageYears = ageInput.trim() === '' ? null : Number(ageInput);
   const ageValid = ageYears !== null && !Number.isNaN(ageYears) && ageYears >= 0 && ageYears <= 18;
-  // 모달에 number 프롭으로 넘기기 위한 정규화 (ageValid일 때만 사용)
-  const childAge = ageValid ? ageYears : 0;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 pb-12 text-gray-800">
@@ -150,8 +148,10 @@ export default function CheckPage() {
             <>
               {/* 1) 페르소나 요약 — 고르면 나이 프리필 + 해당 세트로 스크롤·강조 */}
               <section className="mb-6">
-                <h2 className="mb-1 font-semibold text-gray-900 text-sm">어떤 상황에 가까우세요?</h2>
-                <p className="mb-3 text-gray-500 text-xs">
+                <h2 className="mb-1 text-sm font-semibold text-gray-900">
+                  어떤 상황에 가까우세요?
+                </h2>
+                <p className="mb-3 text-xs text-gray-500">
                   고르면 맞춤 세트로 안내하고 나이를 미리 채워 드려요.
                 </p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -168,8 +168,8 @@ export default function CheckPage() {
                         {s.emoji}
                       </span>
                       <span className="min-w-0">
-                        <span className="block font-semibold text-gray-900 text-sm">{s.title}</span>
-                        <span className="block truncate text-gray-500 text-xs">{s.pain}</span>
+                        <span className="block text-sm font-semibold text-gray-900">{s.title}</span>
+                        <span className="block truncate text-xs text-gray-500">{s.pain}</span>
                       </span>
                     </button>
                   ))}
@@ -179,14 +179,15 @@ export default function CheckPage() {
               {/* 2) 전체 상품 — 연령 탭 필터 + 일부만 + 더보기 */}
               <section className="mb-10">
                 <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="font-bold text-gray-900 text-lg">
-                    전체 상품 <span className="font-medium text-gray-400 text-sm">· {bandLabel}</span>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    전체 상품{' '}
+                    <span className="text-sm font-medium text-gray-400">· {bandLabel}</span>
                   </h2>
                   <div aria-label="연령별 보기" className="flex flex-wrap gap-1.5" role="tablist">
                     {AGE_BANDS.map((b) => (
                       <button
                         aria-selected={ageBand === b.key}
-                        className={`cursor-pointer rounded-full px-3 py-1 font-medium text-sm transition ${
+                        className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium transition ${
                           ageBand === b.key
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -205,7 +206,7 @@ export default function CheckPage() {
                 </div>
 
                 {filteredProducts.length === 0 ? (
-                  <p className="rounded-lg bg-gray-50 p-4 text-gray-500 text-sm">
+                  <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
                     이 연령대 제품이 없어요.
                   </p>
                 ) : (
@@ -218,7 +219,7 @@ export default function CheckPage() {
                     {filteredProducts.length > visibleCount && (
                       <div className="mt-5 text-center">
                         <button
-                          className="cursor-pointer rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-700 text-sm transition hover:bg-gray-50"
+                          className="cursor-pointer rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                           onClick={() => {
                             setVisibleCount((c) => c + 8);
                           }}
@@ -234,7 +235,7 @@ export default function CheckPage() {
 
               {/* 3) 세트 컬렉션 섹션들 — 아래에서 훑어보기 */}
               <div className="flex flex-col gap-10">
-                <h2 className="font-bold text-gray-900 text-lg">상황별 추천 세트</h2>
+                <h2 className="text-lg font-bold text-gray-900">상황별 추천 세트</h2>
                 {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
                   <SetSection
                     cart={cart}
@@ -301,35 +302,8 @@ export default function CheckPage() {
                 <span>{formatKRW(total)}</span>
               </div>
 
-              <div className="mt-6 rounded-xl border border-gray-200 p-4">
-                <label className="text-sm font-semibold text-gray-900" htmlFor="age">
-                  아이 나이 <span className="text-red-500">*</span>
-                </label>
-                <p className="mt-0.5 text-xs text-gray-500">
-                  안전 확인에 필요해요 (만 나이, 0~18).
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    aria-label="아이 나이 (만 나이)"
-                    className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                    id="age"
-                    inputMode="numeric"
-                    max={18}
-                    min={0}
-                    onChange={(e) => {
-                      setAgeInput(e.target.value);
-                    }}
-                    placeholder="예: 5"
-                    type="number"
-                    value={ageInput}
-                  />
-                  <span className="text-base text-gray-600">세</span>
-                </div>
-              </div>
-
               <button
-                className="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-5 py-3 text-lg font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!ageValid}
+                className="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-5 py-3 text-lg font-bold text-white transition hover:bg-blue-700"
                 onClick={() => {
                   setNudgeOpen(true);
                 }}
@@ -337,11 +311,6 @@ export default function CheckPage() {
               >
                 {formatKRW(total)} 결제하기
               </button>
-              {!ageValid && (
-                <p className="mt-2 text-center text-xs text-gray-400">
-                  결제하려면 아이 나이를 입력해 주세요.
-                </p>
-              )}
             </>
           )}
         </div>
@@ -368,9 +337,9 @@ export default function CheckPage() {
         </div>
       )}
 
-      {nudgeOpen && ageValid && (
+      {nudgeOpen && (
         <NudgeModal
-          ageYears={childAge}
+          initialAgeYears={ageValid ? ageYears : null}
           onAdjust={() => {
             setNudgeOpen(false);
             setView('shop');
@@ -408,7 +377,7 @@ export default function CheckPage() {
               strokeLinejoin="round"
             />
           </svg>
-          <span className="-right-1 -top-1 absolute flex size-6 items-center justify-center rounded-full bg-red-500 font-bold text-xs">
+          <span className="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold">
             {cart.length}
           </span>
         </button>
