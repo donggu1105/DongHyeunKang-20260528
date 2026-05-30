@@ -34,6 +34,12 @@ export type PersonaScenario = {
    * 예: "환절기 면역이 걱정되는 엄마들 주목!" / 없으면 setName으로 폴백.
    */
   headline?: string;
+  /**
+   * 세트 전용 대표 히어로 배너(`apps/web/public/hero/*.png`, Pencil 디자인).
+   * 배지·헤드라인·나이 태그가 *이미지에 구워져* 있으므로, 있으면 SetSection이
+   * 첫 제품 사진+오버레이 대신 이 배너를 통째로 쓰고 액션 행만 아래에 둔다.
+   */
+  heroImage?: string;
 };
 
 export const PERSONA_SCENARIOS: PersonaScenario[] = [
@@ -42,6 +48,7 @@ export const PERSONA_SCENARIOS: PersonaScenario[] = [
     emoji: '🤧',
     setName: '환절기 면역 케어 세트',
     headline: '환절기 면역 챙기는 엄마들 주목! 여러 개 먹이다 비타민D 겹치진 않았나요?',
+    heroImage: '/hero/care.png',
     title: '면역 케어맘',
     pain: '여러 개 먹이는데 겹칠까 걱정돼요',
     ageYears: 8,
@@ -59,6 +66,7 @@ export const PERSONA_SCENARIOS: PersonaScenario[] = [
     emoji: '⏱️',
     setName: '바쁜 아침 비타민D 점검',
     headline: '시간 없는 워킹맘 주목! 딱 하나만 30초 안전 점검',
+    heroImage: '/hero/working.png',
     title: '워킹맘',
     pain: '바빠서 딱 하나만 빠르게 확인하고 싶어요',
     ageYears: 6,
@@ -71,6 +79,7 @@ export const PERSONA_SCENARIOS: PersonaScenario[] = [
     emoji: '🍼',
     setName: '첫 영양제 입문 세트',
     headline: '첫 영양제, 뭐가 안전한지 막막한 초보맘 주목!',
+    heroImage: '/hero/beginner.png',
     title: '초보맘',
     pain: '처음이라 뭐가 안전한지 모르겠어요',
     ageYears: 3,

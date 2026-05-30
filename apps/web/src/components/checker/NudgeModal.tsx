@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AnalyzeResponse } from '@/libs/Api';
 import { analyze, ApiError } from '@/libs/Api';
 import { composeSummary, formatNutrientLine } from './nudgeSummary';
@@ -278,6 +278,19 @@ export function NudgeModal({
   const ageValid = ageNum !== null && !Number.isNaN(ageNum) && ageNum >= 0 && ageNum <= 18;
   const ageYears = ageValid ? ageNum : 0;
 
+  // Esc로 닫기 → 장바구니(checkout)로 복귀
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
   const runAnalyze = async () => {
     if (!ageValid) {
       return;
@@ -309,6 +322,24 @@ export function NudgeModal({
         className="relative z-10 flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         role="dialog"
       >
+        <button
+          aria-label="닫고 장바구니로"
+          className="absolute top-3 right-3 z-20 flex size-8 cursor-pointer items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+          onClick={onClose}
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path d="M6 18 18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
         {step === 'age' && (
           <AgeStep
             ageInput={ageInput}

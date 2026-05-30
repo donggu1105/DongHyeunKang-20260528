@@ -54,6 +54,29 @@ describe(NutrientInfo, () => {
     await expect.element(page.getByText(/▸\s*만\s6–8세/u)).toBeVisible();
   });
 
+  it('escapes overflow:hidden ancestors via portal so the popover is not clipped', async () => {
+    // Repro of the real bug: the trigger lived inside `overflow:hidden` (truncate span +
+    // card button), which clipped the absolutely-positioned popover to ~0 visible height.
+    // Box is wide/short enough to SHOW the trigger but CLIP a non-portaled popover.
+    await render(
+      <div data-testid="clip-box" style={{ height: 24, overflow: 'hidden', width: 240 }}>
+        <NutrientInfo ageMonths={72} ingredientName="비타민D">
+          비타민D
+        </NutrientInfo>
+      </div>,
+    );
+    // Open via focus (reliable; avoids clicking a clipped glyph).
+    page
+      .getByRole('button', { name: /비타민D/u })
+      .element()
+      .focus();
+    await expect.element(page.getByRole('tooltip')).toBeVisible();
+    await expect.element(page.getByText('만 6–8세')).toBeVisible();
+    // The popover must NOT be nested inside the overflow:hidden box — it must portal out
+    // (to document.body), otherwise it is clipped and the user sees nothing.
+    expect(page.getByRole('tooltip').element().closest('[data-testid="clip-box"]')).toBeNull();
+  });
+
   it('does NOT toggle a parent button (stopPropagation)', async () => {
     const onParent = vi.fn<() => void>();
     await render(

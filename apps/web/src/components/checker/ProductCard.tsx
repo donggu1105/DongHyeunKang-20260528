@@ -71,12 +71,14 @@ export function ProductCard({ product, selected, onToggle }: Props) {
         <p className="line-clamp-2 min-h-[2.5rem] font-semibold text-gray-900">{product.name}</p>
         {keyIngredients.length > 0 && (
           <ul className="min-h-[4.5rem] space-y-0.5 text-sm">
+            {/* 성분명 + 함량을 한 덩어리로 ("비타민D 25㎍"). 카드엔 🔍를 빼고(showIcon=false)
+                점선 밑줄만 — 성분이 많아 아이콘이 시각적으로 시끄러웠음. */}
             {keyIngredients.map((ing) => (
-              <li className="flex items-baseline justify-between gap-2" key={ing.name}>
-                <span className="truncate text-gray-500">
-                  <NutrientInfo ingredientName={ing.name}>{ing.name}</NutrientInfo>
-                </span>
-                <span className="shrink-0 font-medium text-gray-800">
+              <li className="flex items-baseline justify-end gap-1 text-gray-500" key={ing.name}>
+                <NutrientInfo ingredientName={ing.name} showIcon={false}>
+                  {ing.name}
+                </NutrientInfo>
+                <span className="font-medium text-gray-800">
                   {ing.amount}
                   {ing.unit}
                 </span>
@@ -107,13 +109,6 @@ export function ProductCard({ product, selected, onToggle }: Props) {
               <span className="rounded bg-gray-100 px-2 py-0.5">{product.targetAgeLabel}</span>
             )}
           </div>
-          <span
-            className={`mt-2 inline-flex w-fit rounded-md px-2 py-1 text-sm font-medium ${
-              selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            {selected ? '✓ 담음' : '담기'}
-          </span>
         </div>
       </div>
     </button>

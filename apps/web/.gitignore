@@ -60,3 +60,9 @@ build-archive.log
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# vitest browser-mode screenshot artifacts
+/.vitest-attachments/
+
+# local design scratch (Pencil .pen source + generated images; shipped banners live in public/hero)
+/design/

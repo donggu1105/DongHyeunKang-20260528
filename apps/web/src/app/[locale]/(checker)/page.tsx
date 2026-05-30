@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { formatKRW } from '@/components/checker/format';
 import { NudgeModal } from '@/components/checker/NudgeModal';
 import { PERSONA_SCENARIOS } from '@/components/checker/personaScenarios';
-import type { PersonaId, PersonaScenario } from '@/components/checker/personaScenarios';
+import type { PersonaScenario } from '@/components/checker/personaScenarios';
 import { ProductPicker } from '@/components/checker/ProductPicker';
 import { SetSection } from '@/components/checker/SetSection';
 import type { CatalogProduct } from '@/libs/Api';
@@ -52,7 +52,6 @@ export default function CheckPage() {
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [ageBand, setAgeBand] = useState<AgeBand>('all');
   const [visibleCount, setVisibleCount] = useState(8);
-  const [selectedPersonaId, setSelectedPersonaId] = useState<PersonaId | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -92,20 +91,27 @@ export default function CheckPage() {
     setCart((prev) => prev.filter((x) => x !== id));
   };
 
-  // 추천 세트 빠른 담기 (페르소나 프리셋: 이름→id)
-  const addSet = (s: PersonaScenario) => {
+  // 추천 세트 토글 (페르소나 프리셋: 이름→id) — 전부 담겨있으면 빼고, 아니면 담는다
+  const toggleSet = (s: PersonaScenario) => {
     const ids = s.productNames
       .map((n) => products.find((p) => p.name === n)?.id)
       .filter((x): x is number => x !== undefined);
+    if (ids.length === 0) {
+      return;
+    }
+    const allIn = ids.every((id) => cart.includes(id));
+    if (allIn) {
+      setCart((prev) => prev.filter((x) => !ids.includes(x)));
+      return;
+    }
     setCart((prev) => [...new Set([...prev, ...ids])]);
     if (s.ageYears !== null) {
       setAgeInput(String(s.ageYears));
     }
   };
 
-  // 페르소나 선택 — 나이 프리필 + 해당 세트 섹션으로 스크롤·강조 (제품 자동 담기는 안 함)
+  // 페르소나 선택 — 나이 프리필 + 해당 세트 섹션으로 스크롤 (강조 테두리 없음, 제품 자동 담기 안 함)
   const selectPersona = (s: PersonaScenario) => {
-    setSelectedPersonaId(s.id);
     if (s.ageYears !== null) {
       setAgeInput(String(s.ageYears));
     }
@@ -236,21 +242,32 @@ export default function CheckPage() {
                 )}
               </section>
 
-              {/* 3) 세트 컬렉션 섹션들 — 아래에서 훑어보기 */}
-              <div className="flex flex-col gap-10">
-                <h2 className="text-lg font-bold text-gray-900">상황별 추천 세트</h2>
-                {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
-                  <SetSection
-                    cart={cart}
-                    highlighted={selectedPersonaId === s.id}
-                    key={s.id}
-                    onAddSet={addSet}
-                    onToggle={toggleCart}
-                    products={products}
-                    scenario={s}
-                  />
-                ))}
-              </div>
+              {/* 3) 세트 컬렉션 섹션들 — 위 섹션과 시각적으로 분리(상단 구분선) + 에디토리얼 헤더 */}
+              <section className="mt-14 border-t border-gray-200 pt-12">
+                <header className="mb-8">
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wide text-blue-700">
+                    큐레이션
+                  </span>
+                  <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">
+                    상황별 추천 세트
+                  </h2>
+                  <p className="mt-2 text-sm text-gray-500 sm:text-base">
+                    우리 아이 상황에 맞춘 조합 — 중복·과다 0으로 검증했어요.
+                  </p>
+                </header>
+                <div className="flex flex-col gap-12">
+                  {PERSONA_SCENARIOS.filter((s) => s.setName).map((s) => (
+                    <SetSection
+                      cart={cart}
+                      key={s.id}
+                      onAddSet={toggleSet}
+                      onToggle={toggleCart}
+                      products={products}
+                      scenario={s}
+                    />
+                  ))}
+                </div>
+              </section>
             </>
           )}
         </>
