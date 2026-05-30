@@ -22,7 +22,7 @@ pnpm install
 검증 명령(반복 사용):
 - 웹 타입체크: `pnpm --filter @levit/web check:types`
 - 웹 린트: `pnpm --filter @levit/web lint`
-- 웹 단위테스트: `pnpm --filter @levit/web test -- nudgeSummary`
+- 웹 단위테스트: `pnpm --filter @levit/web exec vitest run --project unit nudgeSummary`
 - API 회귀(무변경 확인): `pnpm --filter @levit/api test`
 - 수동 e2e: `make dev-web` + `make dev-api` 후 **`http://localhost:3000`** 접속 (⚠️ dev는 IPv6 `localhost` 바인딩 — `127.0.0.1` 아님)
 
@@ -171,7 +171,7 @@ describe('formatNutrientLine', () => {
 
 **Step 2: 테스트 실패 확인**
 
-Run: `pnpm --filter @levit/web test -- nudgeSummary`
+Run: `pnpm --filter @levit/web exec vitest run --project unit nudgeSummary`
 Expected: FAIL ("Cannot find module './nudgeSummary'" 또는 export 없음)
 
 **Step 3: 최소 구현**
@@ -221,7 +221,7 @@ export function formatNutrientLine(n: NutrientResult): { recommended: string; cu
 
 **Step 4: 테스트 통과 확인**
 
-Run: `pnpm --filter @levit/web test -- nudgeSummary`
+Run: `pnpm --filter @levit/web exec vitest run --project unit nudgeSummary`
 Expected: PASS (5 passed)
 
 **Step 5: Commit**
@@ -573,7 +573,7 @@ git commit -m "feat(web): 결제 넛지 모달 2단계화(나이 확인→간단
 
 Run:
 ```bash
-pnpm --filter @levit/web test -- nudgeSummary
+pnpm --filter @levit/web exec vitest run --project unit nudgeSummary
 pnpm --filter @levit/web check:types
 pnpm --filter @levit/web lint
 ```
