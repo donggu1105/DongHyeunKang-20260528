@@ -2,6 +2,7 @@
 
 // MVP: 하드코딩된 한국어 문자열 (i18n 메시지 카탈로그 미사용 — 데모용 단순화)
 import type { AnalyzeResponse, NutrientResult } from '@/libs/Api';
+import { NutrientInfo } from './NutrientInfo';
 import { VERDICT_STYLE } from './verdictStyle';
 
 function formatAmount(value: number | null, unit: string): string | null {
@@ -13,7 +14,13 @@ function formatAmount(value: number | null, unit: string): string | null {
   return `${rounded}${unit}`;
 }
 
-function NutrientCard({ nutrient }: { nutrient: NutrientResult }) {
+function NutrientCard({
+  nutrient,
+  ageMonths,
+}: {
+  nutrient: NutrientResult;
+  ageMonths: number | null;
+}) {
   const style = VERDICT_STYLE[nutrient.verdict];
   const total = formatAmount(nutrient.totalCanonical, nutrient.unit);
   const upper = formatAmount(nutrient.upperLimit, nutrient.unit);
@@ -22,7 +29,11 @@ function NutrientCard({ nutrient }: { nutrient: NutrientResult }) {
     <div className={`rounded-xl border p-4 ${style.card}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-lg font-semibold text-gray-900">{nutrient.ingredientName}</p>
+          <p className="text-lg font-semibold text-gray-900">
+            <NutrientInfo ageMonths={ageMonths} ingredientName={nutrient.ingredientName}>
+              {nutrient.ingredientName}
+            </NutrientInfo>
+          </p>
           {total && (
             <p className="text-2xl font-bold text-gray-900">
               {total}
@@ -77,12 +88,18 @@ function NutrientCard({ nutrient }: { nutrient: NutrientResult }) {
   );
 }
 
-export function ReportCard({ report }: { report: AnalyzeResponse }) {
+export function ReportCard({
+  report,
+  ageMonths,
+}: {
+  report: AnalyzeResponse;
+  ageMonths: number | null;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3">
         {report.byNutrient.map((nutrient) => (
-          <NutrientCard key={nutrient.ingredientId} nutrient={nutrient} />
+          <NutrientCard ageMonths={ageMonths} key={nutrient.ingredientId} nutrient={nutrient} />
         ))}
       </div>
 

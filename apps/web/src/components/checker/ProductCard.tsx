@@ -4,6 +4,7 @@ import Image from 'next/image';
 import type { CatalogProduct } from '@/libs/Api';
 import { discountPercent, formatKRW, getMfdsInfo } from './format';
 import { MfdsSeal } from './MfdsSeal';
+import { NutrientInfo } from './NutrientInfo';
 
 type Props = { product: CatalogProduct; selected: boolean; onToggle: (id: number) => void };
 
@@ -72,7 +73,9 @@ export function ProductCard({ product, selected, onToggle }: Props) {
           <ul className="min-h-[4.5rem] space-y-0.5 text-sm">
             {keyIngredients.map((ing) => (
               <li className="flex items-baseline justify-between gap-2" key={ing.name}>
-                <span className="truncate text-gray-500">{ing.name}</span>
+                <span className="truncate text-gray-500">
+                  <NutrientInfo ingredientName={ing.name}>{ing.name}</NutrientInfo>
+                </span>
                 <span className="shrink-0 font-medium text-gray-800">
                   {ing.amount}
                   {ing.unit}
@@ -86,17 +89,17 @@ export function ProductCard({ product, selected, onToggle }: Props) {
         )}
         <div className="mt-auto pt-2">
           {/* 가격 — 커머스형 할인 표시 */}
-          {list && off !== null && (
-            <p className="text-gray-400 text-xs line-through">{list}</p>
-          )}
+          {list && off !== null && <p className="text-xs text-gray-400 line-through">{list}</p>}
           <p className="flex items-baseline gap-1.5">
-            {sale && <span className="whitespace-nowrap font-bold text-base text-gray-900">{sale}</span>}
+            {sale && (
+              <span className="text-base font-bold whitespace-nowrap text-gray-900">{sale}</span>
+            )}
             {off !== null && (
-              <span className="whitespace-nowrap font-bold text-red-500 text-sm">{off}%</span>
+              <span className="text-sm font-bold whitespace-nowrap text-red-500">{off}%</span>
             )}
           </p>
           {/* 제형 / 연령 */}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1 text-gray-500 text-xs">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-gray-500">
             {product.form && (
               <span className="rounded bg-gray-100 px-2 py-0.5">{product.form}</span>
             )}
@@ -105,7 +108,7 @@ export function ProductCard({ product, selected, onToggle }: Props) {
             )}
           </div>
           <span
-            className={`mt-2 inline-flex w-fit rounded-md px-2 py-1 font-medium text-sm ${
+            className={`mt-2 inline-flex w-fit rounded-md px-2 py-1 text-sm font-medium ${
               selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
             }`}
           >

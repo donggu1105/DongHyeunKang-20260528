@@ -176,7 +176,7 @@ function ResultBody({
       >
         {showDetail ? '▾ 자세히 닫기' : '▸ 자세히 보기 (상한·근거·설명)'}
       </button>
-      {showDetail && <ReportCard report={report} />}
+      {showDetail && <ReportCard ageMonths={Math.round(ageYears * 12)} report={report} />}
     </div>
   );
 }
