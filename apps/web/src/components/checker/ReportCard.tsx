@@ -1,37 +1,9 @@
 'use client';
 
 // MVP: 하드코딩된 한국어 문자열 (i18n 메시지 카탈로그 미사용 — 데모용 단순화)
-import type { AnalyzeResponse, NutrientResult, Verdict } from '@/libs/Api';
+import type { AnalyzeResponse, NutrientResult } from '@/libs/Api';
 import { NutrientInfo } from './NutrientInfo';
-
-// 색상은 단독 신호가 아니다 — 라벨 + 이모지 + 텍스트를 함께 제공해 접근성을 확보한다.
-const VERDICT_STYLE: Record<Verdict, { label: string; icon: string; card: string; badge: string }> =
-  {
-    SAFE: {
-      label: '안전',
-      icon: '🟢',
-      card: 'border-green-300 bg-green-50',
-      badge: 'bg-green-600 text-white',
-    },
-    DUPLICATE: {
-      label: '중복 · 범위내',
-      icon: '🟡',
-      card: 'border-amber-300 bg-amber-50',
-      badge: 'bg-amber-500 text-white',
-    },
-    OVER: {
-      label: '과다',
-      icon: '🔴',
-      card: 'border-red-300 bg-red-50',
-      badge: 'bg-red-600 text-white',
-    },
-    UNKNOWN: {
-      label: '확인불가',
-      icon: '⚪',
-      card: 'border-gray-300 bg-gray-50',
-      badge: 'bg-gray-500 text-white',
-    },
-  };
+import { VERDICT_STYLE } from './verdictStyle';
 
 function formatAmount(value: number | null, unit: string): string | null {
   if (value === null) {

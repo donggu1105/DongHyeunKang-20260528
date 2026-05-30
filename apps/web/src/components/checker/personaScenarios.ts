@@ -5,6 +5,10 @@
 // (예: 비타민D3 고함량이 12였다가 다른 값이 됨) 이름→id 해석을 런타임에 한다.
 // 카탈로그에 없는 이름은 page.tsx에서 건너뛰고 경고한다.
 //
+// 세트 구성은 모두 *식약처 신고* 제품(`pnpm crawl` 산출물)으로 채웠다 — 출처 신뢰가
+// 페르소나(P3)의 핵심 페인이라서. 단 이 이름들은 크롤을 돌려야 카탈로그에 존재한다.
+// 크롤 미실행 시 해당 이름은 건너뛰어져 카트가 빌 수 있다(seed만으론 안 뜸).
+//
 // 정직성: P4(효능 의심)는 체커 범위(성분 안전) 밖이라 제외한다.
 
 export type PersonaId = 'care' | 'working' | 'beginner' | 'manual';
@@ -22,8 +26,14 @@ export type PersonaScenario = {
   productNames: string[];
   /** 카드 하단 미리보기 힌트 (이 상황에서 무엇을 보게 되는지). 직접 선택은 생략 */
   hint?: string;
-  /** 커머스형 "테마 세트" 라벨 — 카드를 상품 세트처럼 보이게 한다. 직접 선택은 없음 */
+  /** 커머스형 "테마 세트" 라벨 — 히어로 카드를 상품 세트처럼 보이게 한다. 직접 선택은 없음 */
   setName?: string;
+  /**
+   * 세트 섹션 제목(h2)에 쓰는 *엄마 관점* 설득 헤드라인.
+   * setName(상품 라벨)과 달리, 페르소나의 페인을 직접 찔러 "내 얘기"로 읽히게 한다.
+   * 예: "환절기 면역이 걱정되는 엄마들 주목!" / 없으면 setName으로 폴백.
+   */
+  headline?: string;
 };
 
 export const PERSONA_SCENARIOS: PersonaScenario[] = [
@@ -31,35 +41,41 @@ export const PERSONA_SCENARIOS: PersonaScenario[] = [
     id: 'care',
     emoji: '🤧',
     setName: '환절기 면역 케어 세트',
+    headline: '환절기 면역 챙기는 엄마들 주목! 여러 개 먹이다 비타민D 겹치진 않았나요?',
     title: '면역 케어맘',
     pain: '여러 개 먹이는데 겹칠까 걱정돼요',
     ageYears: 8,
+    // 식약처 신고 제품 4종 — 비타민D가 4개 모두에 겹쳐 만 8세 기준 과다(OVER)로 검증됨.
     productNames: [
-      '키즈 종합비타민 구미',
-      '프로바이오틱스 키즈',
-      '비타민D 드롭',
-      '비타민D3 구미 고함량',
+      'Ur.PNT 하트톡톡 어린이비타민D 1000IU',
+      '어린이 비타민D 드롭',
+      '어린이 비타민D 아연 3중기능성 플러스',
+      'Duosolution DMAX Kids UP 어린이 칼슘 마그네슘 아연 비타민D 망간 뼈건강 초코맛 츄어블 정제',
     ],
-    hint: '예시: 비타민D가 여러 제품에 겹쳐요',
+    hint: '예시: 비타민D가 여러 제품에 겹쳐 과다로 떠요',
   },
   {
     id: 'working',
     emoji: '⏱️',
     setName: '바쁜 아침 비타민D 점검',
+    headline: '시간 없는 워킹맘 주목! 딱 하나만 30초 안전 점검',
     title: '워킹맘',
     pain: '바빠서 딱 하나만 빠르게 확인하고 싶어요',
     ageYears: 6,
-    productNames: ['비타민D3 구미 고함량'],
+    // 식약처 신고 단일 제품 — 만 6세 기준 안전(SAFE) 빠른 확인.
+    productNames: ['Ur.PNT 하트톡톡 어린이비타민D 1000IU'],
     hint: '예시: 딱 1개만 빠르게',
   },
   {
     id: 'beginner',
     emoji: '🍼',
     setName: '첫 영양제 입문 세트',
+    headline: '첫 영양제, 뭐가 안전한지 막막한 초보맘 주목!',
     title: '초보맘',
     pain: '처음이라 뭐가 안전한지 모르겠어요',
     ageYears: 3,
-    productNames: ['프로바이오틱스 키즈', '종합비타민 시럽'],
+    // 식약처 신고 제품 — 유산균은 KDRIs 기준이 없어 확인불가(UNKNOWN)로 정직하게 표시.
+    productNames: ['서흥 어린이 수퍼바이오틱스', '어린이 멀티비타민'],
     hint: '예시: 유산균은 확인불가로 정직하게',
   },
   {

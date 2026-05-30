@@ -10,16 +10,19 @@ const SOURCE = 'https://vitaminshop.co.kr/';
 
 function rng(seed: number) {
   let s = seed >>> 0;
-  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 0xffffffff);
+  return () => (s = (s * 1664525 + 1013904223) >>> 0) / 0xffffffff;
 }
 
 async function collectImageUrls(): Promise<string[]> {
   const html = await fetch(SOURCE).then((r) => r.text());
   // 보호상대(//) 또는 https:// 모두 매칭 후 https로 정규화
-  const matches = html.match(
-    /(?:https:)?\/\/[a-z0-9.]+\/web\/product\/[a-z]+\/[^"'\s)]+\.(?:jpg|jpeg|png)/gi,
-  ) ?? [];
-  const normalized = matches.map((u) => (u.startsWith('http') ? u : `https:${u}`));
+  const matches =
+    html.match(
+      /(?:https:)?\/\/[a-z0-9.]+\/web\/product\/[a-z]+\/[^"'\s)]+\.(?:jpg|jpeg|png)/gi,
+    ) ?? [];
+  const normalized = matches.map((u) =>
+    u.startsWith('http') ? u : `https:${u}`,
+  );
   return Array.from(new Set(normalized)).slice(0, 30);
 }
 
@@ -55,11 +58,16 @@ async function main() {
       const img = images[(Math.imul(p.id, 2654435761) >>> 0) % images.length];
       rand();
       const listPrice = (9 + Math.floor(rand() * 52)) * 1000; // 9,000~60,000
-      const discount = 0.2 + rand() * 0.3;                    // 20~50%
+      const discount = 0.2 + rand() * 0.3; // 20~50%
       const price = Math.round((listPrice * (1 - discount)) / 100) * 100;
-      await prisma.product.update({ where: { id: p.id }, data: { imageUrl: img, listPrice, price } });
+      await prisma.product.update({
+        where: { id: p.id },
+        data: { imageUrl: img, listPrice, price },
+      });
     }
-    console.log(`[backfill] ${products.length}개 제품 매핑 완료 (이미지 ${images.length}장).`);
+    console.log(
+      `[backfill] ${products.length}개 제품 매핑 완료 (이미지 ${images.length}장).`,
+    );
   } finally {
     await prisma.$disconnect();
   }
