@@ -46,6 +46,8 @@ export default function CheckPage() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [cart, setCart] = useState<number[]>([]);
+  // 페르소나 prefill 캐시: 나이 입력은 NudgeModal STEP1으로 이동했고, 여기선 페르소나 선택 시
+  // 미리 채워 모달의 initialAgeYears로만 전달한다(체크아웃에 입력칸 없음).
   const [ageInput, setAgeInput] = useState('');
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [ageBand, setAgeBand] = useState<AgeBand>('all');
@@ -115,6 +117,7 @@ export default function CheckPage() {
     }, 0);
   };
 
+  // 페르소나 prefill을 모달 초기 나이로만 환산 (실제 나이 확인/검증은 NudgeModal STEP1에서)
   const ageYears = ageInput.trim() === '' ? null : Number(ageInput);
   const ageValid = ageYears !== null && !Number.isNaN(ageYears) && ageYears >= 0 && ageYears <= 18;
 
