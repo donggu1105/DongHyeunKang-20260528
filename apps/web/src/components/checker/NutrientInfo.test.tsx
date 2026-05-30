@@ -49,6 +49,9 @@ describe(NutrientInfo, () => {
       .focus();
     await expect.element(page.getByText('만 6–8세')).toBeVisible();
     await expect.element(page.getByText('40㎍')).toBeVisible();
+    // child band (ageMonths=72 → 만 6–8세) must carry the ▸ highlight marker;
+    // fails if isChild highlight logic regresses (e.g. always false).
+    await expect.element(page.getByText(/▸\s*만\s6–8세/u)).toBeVisible();
   });
 
   it('does NOT toggle a parent button (stopPropagation)', async () => {
@@ -60,9 +63,11 @@ describe(NutrientInfo, () => {
         </NutrientInfo>
       </button>,
     );
-    // Chromium prunes the nested role=button from the a11y tree (button-in-button),
-    // so query the inner trigger by its visible 🔍 marker, which only it carries.
-    await page.getByText('🔍').click();
+    // Chromium prunes the nested role=button from the a11y tree (button-in-button).
+    // Select the trigger's marker by stable testid (not the 🔍 emoji text): the wide
+    // inline trigger span only hit-tests on glyph pixels, so a click on it lands in
+    // leading owned by the parent <button>; the fully-filled marker is reliable.
+    await page.getByTestId('nutrient-info-trigger').click();
     expect(onParent).not.toHaveBeenCalled();
   });
 });

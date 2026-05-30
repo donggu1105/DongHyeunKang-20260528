@@ -52,27 +52,37 @@ export function NutrientInfo({ ingredientName, ageMonths, children }: Props) {
     // popover via focus + Esc on the inner role=button, so no key handler is needed here.
     <span
       className="relative inline-flex items-center gap-0.5"
+      onBlur={(e) => {
+        // 포커스가 래퍼 바깥으로 나갈 때만 닫는다 — 팝오버 안의 출처 링크로 이동하면 유지.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setOpen(false);
+        }
+      }}
+      onFocus={() => setOpen(true)}
       onMouseEnter={() => setOpen(true)}
+      // mouseLeave는 마우스 hover 전용 닫기다. 키보드 닫기는 위 focus-within onBlur가 담당한다(MVP hover-card 기준 충분).
       onMouseLeave={() => setOpen(false)}
     >
       {/* Span, not <button>: ProductCard wraps the whole card in a <button>; nested buttons are invalid HTML / an a11y violation, so a real <button> here is intentionally avoided. */}
       {/* oxlint-disable jsx-a11y/prefer-tag-over-role */}
       <span
         aria-describedby={open ? popoverId : undefined}
-        aria-expanded={open}
         className="inline-flex cursor-help items-center gap-0.5 underline decoration-dotted underline-offset-2"
-        onBlur={() => setOpen(false)}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
         role="button"
         tabIndex={0}
       >
         {children}
-        <span aria-hidden="true" className="text-xs opacity-60">
+        {/* data-testid sits on this small marker (not the wide trigger span) on purpose:
+            an inline role=button span only hit-tests on its glyph pixels, so a Playwright
+            click on the wide span lands in inter-glyph leading owned by the parent <button>
+            (flaky). This fully-filled marker is a reliable click target, and the testid keeps
+            the test decoupled from the 🔍 emoji character (survives an icon swap). */}
+        <span aria-hidden="true" className="text-xs opacity-60" data-testid="nutrient-info-trigger">
           🔍
         </span>
       </span>
